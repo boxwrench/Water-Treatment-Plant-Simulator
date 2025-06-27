@@ -1,0 +1,15 @@
+# Node.js modules (if you ever use npm for dev tools)
+node_modules/
+
+# Log files
+*.log
+npm-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
