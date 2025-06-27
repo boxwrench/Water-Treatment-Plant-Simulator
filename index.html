@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WTP Operator Simulator</title>
+    <!-- Link to our CSS file -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- The background image will be set via CSS -->
+        <div id="background-layer"></div>
+
+        <!-- This is where different game views will be rendered -->
+        <div id="view-port">
+
+            <!-- VIEW: CONTROL ROOM (HUB) -->
+            <div id="view-control-room" class="view active">
+                <div id="control-room-ui">
+                    <div id="operator-panel">
+                        <img src="img/characters/operator-neutral.png" alt="Operator">
+                    </div>
+                    <div id="scada-panel">
+                        <div class="scada-header">
+                            <h1>PLANT STATUS</h1>
+                            <div class="header-time">SHIFT TIME: 08:00</div>
+                        </div>
+                        <div class="scada-alarms">
+                            <h2>ACTIVE ALARMS</h2>
+                            <ul id="alarm-list">
+                                <!-- Alarms will be populated by JavaScript -->
+                            </ul>
+                        </div>
+                    </div>
+                    <div id="menu-panel">
+                         <button class="menu-button">SIMULATOR LABS</button>
+                         <button class="menu-button">DIGITAL SOP</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other views like Scenario and Labs will go here -->
+
+        </div>
+    </div>
+
+    <!-- Link to our JavaScript file -->
+    <script src="js/main.js"></script>
+</body>
+</html>
