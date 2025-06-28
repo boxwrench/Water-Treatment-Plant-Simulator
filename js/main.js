@@ -2,7 +2,7 @@
 // COMBINED & FIXED VERSION: This file now contains both the game engine and scenario data.
 
 // ==================================================================================
-// --- SECTION 1: SCENARIO DATA (Moved from scenarios.js) ---
+// --- SECTION 1: SCENARIO DATA ---
 // ==================================================================================
 
 const ALL_PROBLEMS = {
@@ -41,7 +41,7 @@ const ALL_PROBLEMS = {
 
 const SCENARIOS = {
   filterEffluentTurbidity_start: {
-    location: "control_room",
+    location: "control-room",
     colleagueText:
       "Operator, we just brought Filter #3 back online after its scheduled backwash, but the effluent turbidity is still high. It should be much lower, especially right after a backwash. Something's not right.",
     choices: [
@@ -60,7 +60,7 @@ const SCENARIOS = {
     ],
   },
   filterEffluentTurbidity_checkBackwash: {
-    location: "control_room",
+    location: "control-room",
     getScada: (gs) =>
       `FILTER #3 LAST BACKWASH:\nFlow Rate: 10 gpm/sq ft (SOP: 15 gpm/sq ft)\nDuration: 5 minutes (SOP: 10 minutes)`,
     colleagueText:
@@ -88,7 +88,7 @@ const SCENARIOS = {
   },
   filterEffluentTurbidity_solution_manualBackwash: {
     isSolution: true,
-    location: "filter_gallery",
+    location: "filter-gallery",
     colleagueText:
       "Great job! That manual backwash at the correct settings did the trick. Filter #3's effluent turbidity is now stable and well within our targets. The plant is running smoothly again.",
   },
@@ -130,16 +130,15 @@ const gameState = {
 };
 
 // --- GAME ENGINE FUNCTIONS ---
-function switchView(viewName, location = "control_room") {
+function switchView(viewName, location = "control-room") {
   for (const view of Object.values(views)) {
     view.classList.remove("active");
   }
   if (views[viewName]) {
     views[viewName].classList.add("active");
   }
-  // FIX: Removed the faulty if-statement that was forcing the wrong filename.
-  // This now correctly uses the location string provided by the scene data.
-  backgroundLayer.style.backgroundImage = `url(img/backgrounds/${location}.png)`;
+  // Corrected the image path.
+  backgroundLayer.style.backgroundImage = `url('img/backgrounds/${location}.png')`;
 }
 
 function renderAlarms() {
@@ -191,10 +190,7 @@ function renderScene(sceneId) {
     return;
   }
 
-  // FIX: Removed the faulty if-statement that was second-guessing the location name.
-  // We now directly pass the location from the scene data to the switchView function.
   switchView("scenario", scene.location);
-
   scenarioTitleEl.textContent =
     ALL_PROBLEMS[gameState.currentScenario.problemId].title;
   colleagueAvatarEl.src = "img/characters/operator-neutral.png";
