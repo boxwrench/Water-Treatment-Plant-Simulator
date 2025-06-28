@@ -1,14 +1,18 @@
 // WTP Operator Simulator - main.js
-// Phase 1: Foundation & Core Systems
-// Milestone 1.3: Core Game Engine
+// Milestone 1.4: Modals & Supporting UI
 
 // --- DOM ELEMENT REFERENCES ---
-// Getting references to all the HTML elements we'll need to interact with.
+const views = {
+  controlRoom: document.getElementById("view-control-room"),
+  scenario: document.getElementById("view-scenario"),
+};
 const alarmListEl = document.getElementById("alarm-list");
 const timeDisplayEl = document.querySelector(".header-time");
+const sopModal = document.getElementById("modal-sop");
+const btnSop = document.getElementById("btn-sop");
+const btnCloseSop = document.getElementById("btn-close-sop");
 
 // --- GAME DATA ---
-// A constant object holding the definitions for all our problems.
 const ALL_PROBLEMS = {
   highHeadloss: { id: "highHeadloss", title: "High Headloss on Filter" },
   lowClearwellCl2: {
@@ -24,68 +28,63 @@ const ALL_PROBLEMS = {
 };
 
 // --- GAME STATE ---
-// A central object to hold all dynamic information about the game.
 const gameState = {
-  shiftTime: 8.0, // Using a decimal for easier time management
+  shiftTime: 8.0,
   score: 0,
   currentView: "control-room",
-  alarms: [], // This will be an array of active alarm objects
+  alarms: [],
 };
 
 // --- GAME LOGIC FUNCTIONS ---
 
 /**
- * Renders the list of active alarms into the SCADA panel.
+ * Hides all views and shows the one specified by viewName.
+ * @param {string} viewName - The key of the view to show (e.g., 'controlRoom').
  */
-function renderAlarms() {
-  // Clear any existing alarms first
-  alarmListEl.innerHTML = "";
+function switchView(viewName) {
+  // Hide all views first
+  for (const view of Object.values(views)) {
+    view.classList.remove("active");
+  }
+  // Show the requested view
+  if (views[viewName]) {
+    views[viewName].classList.add("active");
+    gameState.currentView = viewName;
+    console.log(`Switched to view: ${viewName}`);
+  } else {
+    console.error(`Error: View "${viewName}" not found.`);
+  }
+}
 
-  // Loop through the alarms in our game state
+function renderAlarms() {
+  alarmListEl.innerHTML = "";
   gameState.alarms.forEach((alarm) => {
     const alarmItem = document.createElement("li");
-
-    // Add a CSS class to style the list item
     alarmItem.classList.add("alarm-item");
-
-    // Set the text content
     alarmItem.textContent = `> ${alarm.title}`;
-
-    // Make the alarm clickable
-    alarmItem.addEventListener("click", () => {
-      handleAlarmClick(alarm.id);
-    });
-
-    // Add the new alarm item to the list in the HTML
+    alarmItem.addEventListener("click", () => handleAlarmClick(alarm.id));
     alarmListEl.appendChild(alarmItem);
   });
 }
 
-/**
- * Updates the shift time display in the header.
- */
 function updateTimeDisplay() {
-  // We'll format the time to look like HH:MM
   const hours = Math.floor(gameState.shiftTime);
   const minutes = Math.round((gameState.shiftTime % 1) * 60);
   const formattedTime = `${String(hours).padStart(2, "0")}:${String(
     minutes
   ).padStart(2, "0")}`;
-
   timeDisplayEl.textContent = `SHIFT TIME: ${formattedTime}`;
 }
 
 /**
- * Handles the logic when an alarm in the list is clicked.
+ * Handles the logic when an alarm is clicked. This will now switch to the scenario view.
  * @param {string} alarmId - The ID of the alarm that was clicked.
  */
 function handleAlarmClick(alarmId) {
-  // For now, we'll just log to the console to prove it works.
-  // Later, this will switch the view to the scenario.
-  console.log(`Alarm clicked: ${alarmId}`);
-  alert(
-    `You clicked the "${ALL_PROBLEMS[alarmId].title}" alarm! The scenario will launch from here.`
-  );
+  console.log(`Starting scenario for alarm: ${alarmId}`);
+  // In the future, this function will set up the specific scenario.
+  // For now, it just switches to the generic scenario view.
+  switchView("scenario");
 }
 
 /**
@@ -93,22 +92,30 @@ function handleAlarmClick(alarmId) {
  */
 function startNewShift() {
   console.log("Starting a new shift!");
-
-  // Reset game state
   gameState.shiftTime = 8.0;
   gameState.score = 0;
-
-  // Create a fresh list of unsolved alarms from our master list
   gameState.alarms = Object.values(ALL_PROBLEMS).map((problem) => ({
-    ...problem, // Copy id and title
-    solved: false, // Add the 'solved' status
+    ...problem,
+    solved: false,
   }));
 
-  // Update the UI
   updateTimeDisplay();
   renderAlarms();
+  switchView("controlRoom"); // Ensure we always start in the control room
 }
 
-// --- INITIALIZATION ---
-// This line waits for the entire HTML page to load before running our initialization code.
-document.addEventListener("DOMContentLoaded", startNewShift);
+// --- INITIALIZATION & EVENT LISTENERS ---
+function initializeGame() {
+  // Set up event listeners for the SOP modal
+  btnSop.addEventListener("click", () => {
+    sopModal.classList.remove("hidden");
+  });
+  btnCloseSop.addEventListener("click", () => {
+    sopModal.classList.add("hidden");
+  });
+
+  // Start the first shift
+  startNewShift();
+}
+
+document.addEventListener("DOMContentLoaded", initializeGame);
