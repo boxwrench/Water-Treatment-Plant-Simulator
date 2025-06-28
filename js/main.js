@@ -137,7 +137,8 @@ function switchView(viewName, location = "control_room") {
   if (views[viewName]) {
     views[viewName].classList.add("active");
   }
-  // FIX: Corrected the image path. The path is relative to index.html.
+  // FIX: Removed the faulty if-statement that was forcing the wrong filename.
+  // This now correctly uses the location string provided by the scene data.
   backgroundLayer.style.backgroundImage = `url(img/backgrounds/${location}.png)`;
 }
 
@@ -190,7 +191,10 @@ function renderScene(sceneId) {
     return;
   }
 
+  // FIX: Removed the faulty if-statement that was second-guessing the location name.
+  // We now directly pass the location from the scene data to the switchView function.
   switchView("scenario", scene.location);
+
   scenarioTitleEl.textContent =
     ALL_PROBLEMS[gameState.currentScenario.problemId].title;
   colleagueAvatarEl.src = "img/characters/operator-neutral.png";
@@ -256,7 +260,7 @@ function endScenario() {
     alert("Shift Complete!");
     startNewShift();
   } else {
-    switchView("controlRoom");
+    switchView("control_room");
     updateTimeDisplay();
     renderAlarms();
   }
@@ -271,7 +275,7 @@ function startNewShift() {
   }));
   updateTimeDisplay();
   renderAlarms();
-  switchView("controlRoom");
+  switchView("control_room");
 }
 
 function initializeGame() {
