@@ -88,13 +88,16 @@
     <div id="modal-end-shift" class="modal-overlay hidden">
       <div class="modal-content">
         <h1>SHIFT COMPLETE!</h1>
-        <!-- Content for end of shift report will go here -->
         <button id="btn-restart-shift" class="menu-button">
           START NEW SHIFT
         </button>
       </div>
     </div>
 
+    <!-- SCRIPT LOADING ORDER IS IMPORTANT -->
+    <!-- Load DATA first -->
+    <script src="js/scenarios.js"></script>
+    <!-- Load a ENGINE second -->
     <script src="js/main.js"></script>
   </body>
 </html>

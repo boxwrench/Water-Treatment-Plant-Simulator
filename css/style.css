@@ -141,7 +141,7 @@ body {
   box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
 }
 
-/* --- SCENARIO VIEW STYLES --- */
+/* --- SCENARIO VIEW STYLES (BUG FIX) --- */
 .scenario-ui {
   display: grid;
   grid-template-columns: 300px 1fr;
@@ -151,13 +151,14 @@ body {
 .scenario-colleague {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: flex-end; /* Aligns items (avatar, bubble) to the bottom of the container */
   align-items: center;
 }
 .scenario-colleague img {
-  max-height: 50%;
-  image-rendering: pixelated;
+  /* Set a fixed height instead of percentage to prevent squishing */
+  height: 300px;
   margin-bottom: 20px;
+  image-rendering: pixelated;
 }
 .speech-bubble {
   width: 100%;
@@ -166,7 +167,7 @@ body {
   border: 3px solid var(--outline-color);
   border-radius: 8px;
   padding: 15px;
-  font-size: 12px; /* Smaller font for more text */
+  font-size: 12px;
   line-height: 1.4;
   position: relative;
   min-height: 150px;
