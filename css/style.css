@@ -141,7 +141,7 @@ body {
   box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
 }
 
-/* --- SCENARIO VIEW STYLES (BUG FIX) --- */
+/* --- SCENARIO VIEW STYLES --- */
 .scenario-ui {
   display: grid;
   grid-template-columns: 300px 1fr;
@@ -151,14 +151,15 @@ body {
 .scenario-colleague {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end; /* Aligns items (avatar, bubble) to the bottom of the container */
+  justify-content: flex-end;
   align-items: center;
 }
 .scenario-colleague img {
-  /* Set a fixed height instead of percentage to prevent squishing */
+  /* === FIX #2: Changed from max-height to a fixed height === */
+  /* This prevents the character from being squished and ensures proper alignment. */
   height: 300px;
-  margin-bottom: 20px;
   image-rendering: pixelated;
+  margin-bottom: 20px;
 }
 .speech-bubble {
   width: 100%;

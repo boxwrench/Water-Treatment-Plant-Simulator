@@ -1,189 +1,264 @@
-// WTP Operator Simulator - main.js
-// This file contains the CORE GAME ENGINE logic.
-// All scenario-specific content is now in scenarios.js.
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-// --- DOM ELEMENT REFERENCES ---
-const views = {
-  controlRoom: document.getElementById("view-control-room"),
-  scenario: document.getElementById("view-scenario"),
-};
-const backgroundLayer = document.getElementById("background-layer");
-const alarmListEl = document.getElementById("alarm-list");
-const timeDisplayEl = document.querySelector(".header-time");
-const sopModal = document.getElementById("modal-sop");
-const btnSop = document.getElementById("btn-sop");
-const btnCloseSop = document.getElementById("btn-close-sop");
-const colleagueAvatarEl = document.getElementById("colleague-avatar");
-const colleagueSpeechBubbleEl = document.getElementById(
-  "colleague-speech-bubble"
-);
-const scenarioTitleEl = document.getElementById("scenario-title");
-const scenarioScadaPanelEl = document.getElementById("scenario-scada-panel");
-const scenarioChoicesEl = document.getElementById("scenario-choices");
-
-// --- GAME STATE ---
-const gameState = {
-  shiftTime: 8.0,
-  score: 0,
-  alarms: [],
-  currentScenario: {
-    problemId: null,
-    trueCause: null,
-    currentSceneId: null,
-  },
-};
-
-// --- GAME ENGINE FUNCTIONS ---
-function switchView(viewName, location = "control_room") {
-  for (const view of Object.values(views)) {
-    view.classList.remove("active");
-  }
-  if (views[viewName]) {
-    views[viewName].classList.add("active");
-  }
-  // BUG FIX: The path to images must be relative to the HTML file, not the JS file.
-  // Removed the '../' from the path.
-  backgroundLayer.style.backgroundImage = `url('img/backgrounds/${location}.png')`;
+:root {
+    --primary-blue: #3a7bd5;
+    --panel-bg: rgba(0, 0, 0, 0.75);
+    --text-color: #ecf0f1;
+    --outline-color: #000000;
+    --alarm-red: #e74c3c;
 }
 
-function renderAlarms() {
-  alarmListEl.innerHTML = "";
-  gameState.alarms.forEach((alarm) => {
-    const alarmItem = document.createElement("li");
-    alarmItem.className = alarm.solved ? "alarm-item solved" : "alarm-item";
-    alarmItem.textContent = `> ${alarm.title}`;
-    if (!alarm.solved) {
-      alarmItem.addEventListener("click", () => startScenario(alarm.id));
-    }
-    alarmListEl.appendChild(alarmItem);
-  });
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Press Start 2P', cursive;
 }
 
-function updateTimeDisplay() {
-  const hours = Math.floor(gameState.shiftTime);
-  const minutes = Math.round((gameState.shiftTime % 1) * 60);
-  const formattedTime = `${String(hours).padStart(2, "0")}:${String(
-    minutes
-  ).padStart(2, "0")}`;
-  timeDisplayEl.textContent = `SHIFT TIME: ${formattedTime}`;
+body {
+    background-color: #34495e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
 }
 
-function startScenario(problemId) {
-  const causes = ALL_PROBLEMS[problemId]?.causes;
-  if (!causes || causes.length === 0) {
-    alert(
-      "This scenario is still in development. Please select another alarm."
-    );
-    return;
-  }
-  gameState.currentScenario.problemId = problemId;
-  gameState.currentScenario.trueCause =
-    causes[Math.floor(Math.random() * causes.length)];
-  // For this demo, we'll force the one cause we've built.
-  if (problemId === "filterEffluentTurbidity") {
-    gameState.currentScenario.trueCause = "inadequateBackwash";
-  }
-  console.log(
-    `Starting scenario: ${problemId}. True Cause: ${gameState.currentScenario.trueCause}`
-  );
-  renderScene(`${problemId}_start`);
+#game-container {
+    width: 1024px;
+    height: 768px;
+    position: relative;
+    border: 4px solid var(--outline-color);
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
 }
 
-function renderScene(sceneId) {
-  gameState.currentScenario.currentSceneId = sceneId;
-  const scene = SCENARIOS[sceneId];
-  if (!scene) {
-    console.error(`Error: Scene "${sceneId}" not found!`);
-    return;
-  }
-
-  switchView("scenario", scene.location);
-  scenarioTitleEl.textContent =
-    ALL_PROBLEMS[gameState.currentScenario.problemId].title;
-  colleagueAvatarEl.src = "img/characters/operator-neutral.png";
-  colleagueSpeechBubbleEl.classList.remove("hidden");
-  const colleagueText = scene.getColleagueText
-    ? scene.getColleagueText(gameState)
-    : scene.colleagueText;
-  colleagueSpeechBubbleEl.textContent = colleagueText;
-
-  scenarioScadaPanelEl.style.display = scene.getScada ? "block" : "none";
-  if (scene.getScada) {
-    scenarioScadaPanelEl.textContent = scene.getScada(gameState);
-  }
-
-  scenarioChoicesEl.innerHTML = "";
-  const choices = scene.getChoices
-    ? scene.getChoices(gameState)
-    : scene.choices;
-
-  if (scene.isSolution) {
-    const btn = document.createElement("button");
-    btn.textContent = "Problem Solved!";
-    btn.className = "menu-button";
-    btn.onclick = () => endScenario();
-    scenarioChoicesEl.appendChild(btn);
-  } else {
-    choices.forEach((choice) => {
-      const btn = document.createElement("button");
-      btn.textContent = choice.text;
-      btn.className = "menu-button";
-      btn.onclick = () => {
-        const nextSceneId = choice.action(gameState);
-        renderScene(nextSceneId);
-      };
-      scenarioChoicesEl.appendChild(btn);
-    });
-  }
+#background-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    image-rendering: pixelated;
+    transition: background-image 0.5s ease-in-out;
 }
 
-function handleIncorrectChoice(feedbackText, returnSceneId) {
-  colleagueAvatarEl.src = "img/characters/operator-concerned.png";
-  colleagueSpeechBubbleEl.textContent = feedbackText;
-
-  const btn = document.createElement("button");
-  btn.textContent = "Okay, let me try again.";
-  btn.className = "menu-button";
-  btn.onclick = () => renderScene(returnSceneId);
-  scenarioChoicesEl.innerHTML = "";
-  scenarioChoicesEl.appendChild(btn);
-  // This is a special function call that doesn't return a scene ID, so we return null
-  return null;
+#view-port {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
 }
 
-function endScenario() {
-  const currentAlarm = gameState.alarms.find(
-    (a) => a.id === gameState.currentScenario.problemId
-  );
-  if (currentAlarm) currentAlarm.solved = true;
-  gameState.shiftTime += 1.5;
-  const allSolved = gameState.alarms.every((a) => a.solved);
-  if (allSolved || gameState.shiftTime >= 16) {
-    alert("Shift Complete!"); // Placeholder
-    startNewShift();
-  } else {
-    switchView("controlRoom");
-    updateTimeDisplay();
-    renderAlarms();
-  }
+.view {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    display: none;
+}
+.view.active {
+    display: block;
 }
 
-function startNewShift() {
-  gameState.shiftTime = 8.0;
-  gameState.score = 0;
-  gameState.alarms = Object.values(ALL_PROBLEMS).map((p) => ({
-    ...p,
-    solved: false,
-  }));
-  updateTimeDisplay();
-  renderAlarms();
-  switchView("controlRoom");
+/* --- CONTROL ROOM STYLES --- */
+#control-room-ui {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    grid-template-rows: auto 1fr 150px;
+    grid-template-areas:
+        "operator scada"
+        "operator ."
+        "operator menu";
+    height: 100%;
+    gap: 20px;
+}
+#operator-panel {
+    grid-area: operator;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+#operator-panel img {
+    max-height: 80%;
+    image-rendering: pixelated;
+}
+#scada-panel {
+    grid-area: scada;
+    background-color: var(--panel-bg);
+    border: 4px solid var(--primary-blue);
+    border-radius: 8px;
+    padding: 15px;
+    color: var(--text-color);
+}
+.scada-header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--primary-blue);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+.scada-alarms h2 {
+    text-align: center;
+    color: var(--alarm-red);
+    margin-bottom: 15px;
+    animation: blink 1.5s infinite;
+}
+.alarm-item {
+    padding: 5px;
+    cursor: pointer;
+    list-style: none;
+    border-radius: 4px;
+}
+.alarm-item:hover {
+    background-color: var(--primary-blue);
+}
+.alarm-item.solved {
+    color: #555;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+.alarm-item.solved:hover {
+    background-color: transparent;
+}
+#menu-panel {
+    grid-area: menu;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+.menu-button {
+    background-color: var(--primary-blue);
+    border: 3px solid var(--outline-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+    transition: all 0.1s ease-in-out;
+}
+.menu-button:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
 }
 
-function initializeGame() {
-  btnSop.addEventListener("click", () => sopModal.classList.remove("hidden"));
-  btnCloseSop.addEventListener("click", () => sopModal.classList.add("hidden"));
-  startNewShift();
+/* --- SCENARIO VIEW STYLES --- */
+.scenario-ui {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    height: 100%;
+    gap: 20px;
+}
+.scenario-colleague {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+}
+.scenario-colleague img {
+    /* === FIX #2: Changed from max-height to a fixed height === */
+    /* This prevents the character from being squished and ensures proper alignment. */
+    height: 300px;
+    image-rendering: pixelated;
+    margin-bottom: 20px;
+}
+.speech-bubble {
+    width: 100%;
+    background-color: var(--text-color);
+    color: var(--outline-color);
+    border: 3px solid var(--outline-color);
+    border-radius: 8px;
+    padding: 15px;
+    font-size: 12px;
+    line-height: 1.4;
+    position: relative;
+    min-height: 150px;
+}
+.speech-bubble.hidden {
+    display: none;
+}
+.speech-bubble::after {
+    content: '';
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 0 15px 15px 15px;
+    border-style: solid;
+    border-color: transparent transparent var(--outline-color) transparent;
+}
+.scenario-main {
+    display: flex;
+    flex-direction: column;
+}
+.scenario-main h1 {
+    text-align: center;
+    color: var(--alarm-red);
+    margin-bottom: 20px;
+}
+.scenario-main .scada-panel {
+    background-color: var(--panel-bg);
+    border: 4px solid var(--primary-blue);
+    padding: 15px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    white-space: pre-wrap;
+}
+.choices-grid {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
 }
 
-document.addEventListener("DOMContentLoaded", initializeGame);
+/* --- MODAL STYLES --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-overlay.hidden {
+    display: none;
+}
+.modal-content {
+    background-color: #34495e;
+    color: var(--text-color);
+    padding: 20px;
+    border: 4px solid var(--outline-color);
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px;
+    text-align: center;
+}
+.modal-content h1 {
+    margin-bottom: 20px;
+    color: var(--primary-blue);
+}
+.sop-content {
+    text-align: left;
+    background-color: rgba(255,255,255,0.1);
+    padding: 15px;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.5;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+.sop-content h3 {
+    margin-top: 10px;
+    color: var(--primary-blue);
+}
+.modal-content .menu-button {
+    margin-top: 20px;
+    width: 50%;
+}
+
+@keyframes blink {
+    50% { opacity: 0.5; }
+}
