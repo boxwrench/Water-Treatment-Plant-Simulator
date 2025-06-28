@@ -155,6 +155,7 @@ body {
   align-items: center;
 }
 .scenario-colleague img {
+  /* FIX: Changed from max-height to a fixed height */
   height: 300px;
   image-rendering: pixelated;
   margin-bottom: 20px;
