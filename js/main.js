@@ -138,7 +138,7 @@ function switchView(viewName, location = "control_room") {
     views[viewName].classList.add("active");
   }
   // FIX: Corrected the image path. The path is relative to index.html.
-  backgroundLayer.style.backgroundImage = `url('img/backgrounds/${location}.png')`;
+  backgroundLayer.style.backgroundImage = `url(img/backgrounds/${location}.png)`;
 }
 
 function renderAlarms() {
