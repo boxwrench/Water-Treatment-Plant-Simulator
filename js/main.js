@@ -1,283 +1,224 @@
-// WTP Operator Simulator - main.js
-// COMBINED & FIXED VERSION: This file now contains both the game engine and scenario data.
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-// ==================================================================================
-// --- SECTION 1: SCENARIO DATA ---
-// ==================================================================================
-
-const ALL_PROBLEMS = {
-  filterEffluentTurbidity: {
-    id: "filterEffluentTurbidity",
-    title: "Increased Turbidity in Filter Effluent",
-    causes: [
-      "inadequateBackwash",
-      "polymerIssue",
-      "ripeningIssue",
-      "poorFloc",
-      "overloaded",
-    ],
-  },
-  lowClearwellCl2: {
-    id: "lowClearwellCl2",
-    title: "Low Chlorine in Clearwell",
-    causes: [],
-  },
-  lowReservoirCl2: {
-    id: "lowReservoirCl2",
-    title: "Low Total Cl2 in Reservoir",
-    causes: [],
-  },
-  shortFilterRuns: {
-    id: "shortFilterRuns",
-    title: "Short Filter Run Times",
-    causes: [],
-  },
-  highTurbidity: {
-    id: "highTurbidity",
-    title: "High Settled Water Turbidity",
-    causes: [],
-  },
-};
-
-const SCENARIOS = {
-  filterEffluentTurbidity_start: {
-    location: "control-room",
-    colleagueText:
-      "Operator, we just brought Filter #3 back online after its scheduled backwash, but the effluent turbidity is still high. It should be much lower, especially right after a backwash. Something's not right.",
-    choices: [
-      {
-        text: "Check SCADA logs for recent backwash",
-        action: (gs) => `filterEffluentTurbidity_checkBackwash`,
-      },
-      {
-        text: "Increase coagulant dosage",
-        action: (gs) =>
-          handleIncorrectChoice(
-            "That's not the right approach. Increasing coagulant won't fix a problem originating from an ineffective backwash. It could lead to over-coagulation and waste chemicals.",
-            "filterEffluentTurbidity_start"
-          ),
-      },
-    ],
-  },
-  filterEffluentTurbidity_checkBackwash: {
-    location: "control-room",
-    getScada: (gs) =>
-      `FILTER #3 LAST BACKWASH:\nFlow Rate: 10 gpm/sq ft (SOP: 15 gpm/sq ft)\nDuration: 5 minutes (SOP: 10 minutes)`,
-    colleagueText:
-      "Okay, the logs show the last backwash ran at a lower flow rate and for a shorter duration than our SOP. That's probably why we're seeing this turbidity issue.",
-    getChoices: (gs) => {
-      if (gs.currentScenario.trueCause === "inadequateBackwash") {
-        return [
-          {
-            text: "Initiate immediate manual backwash",
-            action: () => "filterEffluentTurbidity_solution_manualBackwash",
-          },
-        ];
-      }
-      return [
-        {
-          text: "This must be the wrong path...",
-          action: () =>
-            handleIncorrectChoice(
-              "This doesn't seem to be the root cause. Let's reconsider.",
-              "filterEffluentTurbidity_start"
-            ),
-        },
-      ];
-    },
-  },
-  filterEffluentTurbidity_solution_manualBackwash: {
-    isSolution: true,
-    location: "filter-gallery",
-    colleagueText:
-      "Great job! That manual backwash at the correct settings did the trick. Filter #3's effluent turbidity is now stable and well within our targets. The plant is running smoothly again.",
-  },
-};
-
-// ==================================================================================
-// --- SECTION 2: CORE GAME ENGINE ---
-// ==================================================================================
-
-// --- DOM ELEMENT REFERENCES ---
-const views = {
-  controlRoom: document.getElementById("view-control-room"),
-  scenario: document.getElementById("view-scenario"),
-};
-const backgroundLayer = document.getElementById("background-layer");
-const alarmListEl = document.getElementById("alarm-list");
-const timeDisplayEl = document.querySelector(".header-time");
-const sopModal = document.getElementById("modal-sop");
-const btnSop = document.getElementById("btn-sop");
-const btnCloseSop = document.getElementById("btn-close-sop");
-const colleagueAvatarEl = document.getElementById("colleague-avatar");
-const colleagueSpeechBubbleEl = document.getElementById(
-  "colleague-speech-bubble"
-);
-const scenarioTitleEl = document.getElementById("scenario-title");
-const scenarioScadaPanelEl = document.getElementById("scenario-scada-panel");
-const scenarioChoicesEl = document.getElementById("scenario-choices");
-
-// --- GAME STATE ---
-const gameState = {
-  shiftTime: 8.0,
-  score: 0,
-  alarms: [],
-  currentScenario: {
-    problemId: null,
-    trueCause: null,
-    currentSceneId: null,
-  },
-};
-
-// --- GAME ENGINE FUNCTIONS ---
-function switchView(viewName, location = "control-room") {
-  for (const view of Object.values(views)) {
-    view.classList.remove("active");
-  }
-  if (views[viewName]) {
-    views[viewName].classList.add("active");
-  }
-  // Corrected the image path.
-  backgroundLayer.style.backgroundImage = `url('img/backgrounds/${location}.png')`;
+:root {
+    --primary-blue: #3a7bd5;
+    --panel-bg: rgba(0, 0, 0, 0.75);
+    --text-color: #ecf0f1;
+    --outline-color: #000000;
+    --alarm-red: #e74c3c;
 }
 
-function renderAlarms() {
-  alarmListEl.innerHTML = "";
-  gameState.alarms.forEach((alarm) => {
-    const alarmItem = document.createElement("li");
-    alarmItem.className = alarm.solved ? "alarm-item solved" : "alarm-item";
-    alarmItem.textContent = `> ${alarm.title}`;
-    if (!alarm.solved) {
-      alarmItem.addEventListener("click", () => startScenario(alarm.id));
-    }
-    alarmListEl.appendChild(alarmItem);
-  });
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Press Start 2P', cursive;
 }
 
-function updateTimeDisplay() {
-  const hours = Math.floor(gameState.shiftTime);
-  const minutes = Math.round((gameState.shiftTime % 1) * 60);
-  const formattedTime = `${String(hours).padStart(2, "0")}:${String(
-    minutes
-  ).padStart(2, "0")}`;
-  timeDisplayEl.textContent = `SHIFT TIME: ${formattedTime}`;
+body {
+    background-color: #34495e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
 }
 
-function startScenario(problemId) {
-  const problem = ALL_PROBLEMS[problemId];
-  if (!problem || !problem.causes || problem.causes.length === 0) {
-    alert(
-      "This scenario is still in development. Please select another alarm."
-    );
-    return;
-  }
-  gameState.currentScenario.problemId = problemId;
-  gameState.currentScenario.trueCause =
-    problem.causes[Math.floor(Math.random() * problem.causes.length)];
-
-  // FOR DEMO: Force the one cause we've built for this scenario
-  if (problemId === "filterEffluentTurbidity") {
-    gameState.currentScenario.trueCause = "inadequateBackwash";
-  }
-
-  renderScene(`${problemId}_start`);
+#game-container {
+    width: 1024px;
+    height: 768px;
+    position: relative;
+    border: 4px solid var(--outline-color);
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
+    background-color: #000; /* Fallback background */
 }
 
-function renderScene(sceneId) {
-  gameState.currentScenario.currentSceneId = sceneId;
-  const scene = SCENARIOS[sceneId];
-  if (!scene) {
-    return;
-  }
-
-  switchView("scenario", scene.location);
-  scenarioTitleEl.textContent =
-    ALL_PROBLEMS[gameState.currentScenario.problemId].title;
-  colleagueAvatarEl.src = "img/characters/operator-neutral.png";
-  colleagueSpeechBubbleEl.classList.remove("hidden");
-  const colleagueText = scene.getColleagueText
-    ? scene.getColleagueText(gameState)
-    : scene.colleagueText;
-  colleagueSpeechBubbleEl.textContent = colleagueText;
-
-  scenarioScadaPanelEl.style.display = scene.getScada ? "block" : "none";
-  if (scene.getScada) {
-    scenarioScadaPanelEl.textContent = scene.getScada(gameState);
-  }
-
-  scenarioChoicesEl.innerHTML = "";
-  const choices = scene.getChoices
-    ? scene.getChoices(gameState)
-    : scene.choices;
-
-  if (scene.isSolution) {
-    const btn = document.createElement("button");
-    btn.textContent = "Problem Solved!";
-    btn.className = "menu-button";
-    btn.onclick = () => endScenario();
-    scenarioChoicesEl.appendChild(btn);
-  } else if (choices) {
-    choices.forEach((choice) => {
-      const btn = document.createElement("button");
-      btn.textContent = choice.text;
-      btn.className = "menu-button";
-      btn.onclick = () => {
-        const nextSceneId = choice.action(gameState);
-        if (typeof nextSceneId === "string") {
-          renderScene(nextSceneId);
-        }
-      };
-      scenarioChoicesEl.appendChild(btn);
-    });
-  }
+.view {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    display: none;
+    position: absolute;
+    top: 0; left: 0;
+    background-size: cover;
+    image-rendering: pixelated;
+    transition: opacity 0.3s ease-in-out;
+    opacity: 0;
+}
+.view.active {
+    display: block;
+    opacity: 1;
+    z-index: 10;
 }
 
-function handleIncorrectChoice(feedbackText, returnSceneId) {
-  colleagueAvatarEl.src = "img/characters/operator-concerned.png";
-  colleagueSpeechBubbleEl.textContent = feedbackText;
-
-  const btn = document.createElement("button");
-  btn.textContent = "Okay, let me try again.";
-  btn.className = "menu-button";
-  btn.onclick = () => renderScene(returnSceneId);
-  scenarioChoicesEl.innerHTML = "";
-  scenarioChoicesEl.appendChild(btn);
-  return null;
+#control-room-ui, .scenario-ui {
+    position: relative;
+    z-index: 20;
+    height: 100%;
 }
 
-function endScenario() {
-  const currentAlarm = gameState.alarms.find(
-    (a) => a.id === gameState.currentScenario.problemId
-  );
-  if (currentAlarm) currentAlarm.solved = true;
-  gameState.shiftTime += 1.5;
-  const allSolved = gameState.alarms.every((a) => a.solved);
-  if (allSolved || gameState.shiftTime >= 16) {
-    alert("Shift Complete!");
-    startNewShift();
-  } else {
-    switchView("control_room");
-    updateTimeDisplay();
-    renderAlarms();
-  }
+#control-room-ui {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    grid-template-rows: auto 1fr 150px;
+    grid-template-areas:
+        "operator scada"
+        "operator ."
+        "operator menu";
+    gap: 20px;
 }
 
-function startNewShift() {
-  gameState.shiftTime = 8.0;
-  gameState.score = 0;
-  gameState.alarms = Object.values(ALL_PROBLEMS).map((p) => ({
-    ...p,
-    solved: false,
-  }));
-  updateTimeDisplay();
-  renderAlarms();
-  switchView("control_room");
+#operator-panel {
+    grid-area: operator;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+#operator-panel img {
+    max-height: 80%;
+    image-rendering: pixelated;
+}
+#scada-panel {
+    grid-area: scada;
+    background-color: var(--panel-bg);
+    border: 4px solid var(--primary-blue);
+    border-radius: 8px;
+    padding: 15px;
+    color: var(--text-color);
+}
+.scada-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--primary-blue);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+.scada-header h1 { font-size: 20px; }
+.header-time { font-size: 14px; }
+.scada-alarms h2 {
+    text-align: center;
+    color: var(--alarm-red);
+    margin-bottom: 15px;
+    animation: blink 1.5s infinite;
+}
+.alarm-item {
+    padding: 5px;
+    cursor: pointer;
+    list-style: none;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.alarm-item:hover { background-color: var(--primary-blue); }
+.alarm-item.solved {
+    color: #95a5a6; /* Muted color for solved alarms */
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+.alarm-item.solved:hover { background-color: transparent; }
+
+#menu-panel {
+    grid-area: menu;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+.menu-button {
+    background-color: var(--primary-blue);
+    border: 3px solid var(--outline-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+    transition: all 0.1s ease-in-out;
+}
+.menu-button:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
 }
 
-function initializeGame() {
-  btnSop.addEventListener("click", () => sopModal.classList.remove("hidden"));
-  btnCloseSop.addEventListener("click", () => sopModal.classList.add("hidden"));
-  startNewShift();
+.scenario-ui {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
 }
+.scenario-colleague {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+}
+.scenario-colleague img {
+    height: 300px; 
+    image-rendering: pixelated;
+    margin-bottom: 20px;
+}
+.speech-bubble {
+    width: 100%;
+    background-color: var(--text-color);
+    color: var(--outline-color);
+    border: 3px solid var(--outline-color);
+    border-radius: 8px;
+    padding: 15px;
+    font-size: 12px;
+    line-height: 1.4;
+    position: relative;
+    min-height: 150px;
+}
+.speech-bubble::after {
+    content: '';
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 0 15px 15px 15px;
+    border-style: solid;
+    border-color: transparent transparent var(--outline-color) transparent;
+}
+.scenario-main { display: flex; flex-direction: column; }
+.scenario-main h1 { text-align: center; color: var(--alarm-red); margin-bottom: 20px; }
+.scenario-main .scada-panel {
+    background-color: var(--panel-bg);
+    border: 4px solid var(--primary-blue);
+    padding: 15px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    white-space: pre-wrap;
+}
+.choices-grid { margin-top: auto; display: grid; grid-template-columns: 1fr; gap: 15px; }
 
-document.addEventListener("DOMContentLoaded", initializeGame);
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-overlay.hidden { display: none; }
+.modal-content {
+    background-color: #34495e;
+    color: var(--text-color);
+    padding: 20px;
+    border: 4px solid var(--outline-color);
+    border-radius: 8px;
+    width: 90%; max-width: 800px;
+    text-align: center;
+}
+.modal-content h1 { margin-bottom: 20px; color: var(--primary-blue); }
+.sop-content {
+    text-align: left;
+    background-color: rgba(255,255,255,0.1);
+    padding: 15px;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.5;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+.sop-content h3 { margin-top: 10px; color: var(--primary-blue); }
+.modal-content .menu-button { margin-top: 20px; width: 50%; }
+
+@keyframes blink { 50% { opacity: 0.5; } }
