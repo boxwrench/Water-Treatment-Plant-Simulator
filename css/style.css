@@ -1,145 +1,151 @@
 /* Using a Google Font for that classic 16-bit feel */
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
 
 :root {
-    --primary-blue: #3a7bd5;
-    --secondary-blue: #00d2ff;
-    --panel-bg: #2c3e50;
-    --text-color: #ecf0f1;
-    --outline-color: #000000;
-    --alarm-red: #e74c3c;
+  --primary-blue: #3a7bd5;
+  --secondary-blue: #00d2ff;
+  --panel-bg: #2c3e50;
+  --text-color: #ecf0f1;
+  --outline-color: #000000;
+  --alarm-red: #e74c3c;
 }
 
 /* Basic reset and font setup */
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Press Start 2P', cursive;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Press Start 2P", cursive;
 }
 
 body {
-    background-color: #34495e;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    overflow: hidden;
+  background-color: #34495e;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
 }
 
 #game-container {
-    width: 1024px;
-    height: 768px;
-    position: relative;
-    border: 4px solid var(--outline-color);
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
+  width: 1024px;
+  height: 768px;
+  position: relative;
+  border: 4px solid var(--outline-color);
+  box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.5);
 }
 
 #background-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url('../img/backgrounds/control-room.png');
-    background-size: cover;
-    /* This is the magic line that keeps pixel art sharp! */
-    image-rendering: pixelated;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("../img/backgrounds/control-room.png");
+  background-size: cover;
+  /* This is the magic line that keeps pixel art sharp! */
+  image-rendering: pixelated;
 }
 
 #view-port {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
 .view {
-    width: 100%;
-    height: 100%;
-    display: none; /* Views are hidden by default */
+  width: 100%;
+  height: 100%;
+  display: none; /* Views are hidden by default */
 }
 
 .view.active {
-    display: block; /* The active view is shown */
+  display: block; /* The active view is shown */
 }
 
 /* Control Room Specific Styles */
 #control-room-ui {
-    display: grid;
-    grid-template-columns: 250px 1fr;
-    grid-template-rows: 1fr 150px;
-    grid-template-areas:
-        "operator scada"
-        "operator menu";
-    height: 100%;
-    padding: 20px;
-    gap: 20px;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  /* --- CHANGE: Updated grid rows to make the SCADA panel smaller --- */
+  grid-template-rows: auto 1fr 150px; /* 'auto' makes the first row fit its content */
+  grid-template-areas:
+    "operator scada"
+    "operator ." /* This middle row is now flexible empty space */
+    "operator menu";
+  height: 100%;
+  padding: 20px;
+  gap: 20px;
 }
 
 #operator-panel {
-    grid-area: operator;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
+  grid-area: operator;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
 }
 #operator-panel img {
-    max-height: 80%;
-    image-rendering: pixelated; /* Keep the character sharp too */
+  max-height: 80%;
+  image-rendering: pixelated; /* Keep the character sharp too */
 }
 
-
 #scada-panel {
-    grid-area: scada;
-    background-color: rgba(0, 0, 0, 0.75);
-    border: 4px solid var(--primary-blue);
-    border-radius: 8px;
-    padding: 15px;
-    color: var(--text-color);
-    display: flex;
-    flex-direction: column;
+  grid-area: scada;
+  background-color: rgba(0, 0, 0, 0.75);
+  border: 4px solid var(--primary-blue);
+  border-radius: 8px;
+  padding: 15px;
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
 }
 
 .scada-header {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 2px solid var(--primary-blue);
-    padding-bottom: 10px;
-    margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--primary-blue);
+  padding-bottom: 10px;
+  margin-bottom: 10px;
 }
-.scada-header h1 { font-size: 24px; }
-.header-time { font-size: 16px; }
+.scada-header h1 {
+  font-size: 24px;
+}
+.header-time {
+  font-size: 16px;
+}
 
 .scada-alarms h2 {
-    text-align: center;
-    color: var(--alarm-red);
-    margin-bottom: 15px;
-    animation: blink 1.5s infinite;
+  text-align: center;
+  color: var(--alarm-red);
+  margin-bottom: 15px;
+  animation: blink 1.5s infinite;
 }
 
 @keyframes blink {
-    50% { opacity: 0.5; }
+  50% {
+    opacity: 0.5;
+  }
 }
 
-
 #menu-panel {
-    grid-area: menu;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+  grid-area: menu;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
 }
 
 .menu-button {
-    background-color: var(--primary-blue);
-    border: 3px solid var(--outline-color);
-    border-radius: 8px;
-    color: var(--text-color);
-    font-size: 20px;
-    cursor: pointer;
-    box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
-    transition: all 0.1s ease-in-out;
+  background-color: var(--primary-blue);
+  border: 3px solid var(--outline-color);
+  border-radius: 8px;
+  color: var(--text-color);
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5);
+  transition: all 0.1s ease-in-out;
 }
 .menu-button:hover {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
 }
