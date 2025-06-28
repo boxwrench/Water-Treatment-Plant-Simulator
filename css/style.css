@@ -141,7 +141,7 @@ body {
   box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
 }
 
-/* --- SCENARIO VIEW STYLES --- */
+/* --- SCENARIO VIEW STYLES (BUG FIX) --- */
 .scenario-ui {
   display: grid;
   grid-template-columns: 300px 1fr;
@@ -155,8 +155,6 @@ body {
   align-items: center;
 }
 .scenario-colleague img {
-  /* === FIX #2: Changed from max-height to a fixed height === */
-  /* This prevents the character from being squished and ensures proper alignment. */
   height: 300px;
   image-rendering: pixelated;
   margin-bottom: 20px;

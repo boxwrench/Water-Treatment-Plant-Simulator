@@ -42,25 +42,19 @@
                 src="img/characters/operator-neutral.png"
                 alt="Operator colleague"
               />
-              <div id="colleague-speech-bubble" class="speech-bubble">
-                <!-- Colleague's text will go here -->
-              </div>
+              <div id="colleague-speech-bubble" class="speech-bubble"></div>
             </div>
             <div class="scenario-main">
               <h1 id="scenario-title"></h1>
-              <div id="scenario-scada-panel" class="scada-panel">
-                <!-- Dynamic SCADA info for the scenario -->
-              </div>
-              <div id="scenario-choices" class="choices-grid">
-                <!-- Player choice buttons will go here -->
-              </div>
+              <div id="scenario-scada-panel" class="scada-panel"></div>
+              <div id="scenario-choices" class="choices-grid"></div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- MODAL: SOP MANUAL (Hidden by default) -->
+    <!-- MODALS (Hidden by default) -->
     <div id="modal-sop" class="modal-overlay hidden">
       <div class="modal-content">
         <h1>S.O.P. MANUAL</h1>
@@ -83,8 +77,6 @@
         <button id="btn-close-sop" class="menu-button">CLOSE</button>
       </div>
     </div>
-
-    <!-- MODAL: END OF SHIFT REPORT (Hidden by default) -->
     <div id="modal-end-shift" class="modal-overlay hidden">
       <div class="modal-content">
         <h1>SHIFT COMPLETE!</h1>
@@ -95,9 +87,7 @@
     </div>
 
     <!-- SCRIPT LOADING ORDER IS IMPORTANT -->
-    <!-- Load DATA first -->
     <script src="js/scenarios.js"></script>
-    <!-- Load a ENGINE second -->
     <script src="js/main.js"></script>
   </body>
 </html>
