@@ -1,224 +1,244 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+// WTP Operator Simulator - main.js
+// CORE GAME ENGINE (Version 2 - More Robust)
 
-:root {
-    --primary-blue: #3a7bd5;
-    --panel-bg: rgba(0, 0, 0, 0.75);
-    --text-color: #ecf0f1;
-    --outline-color: #000000;
-    --alarm-red: #e74c3c;
-}
+// --- DOM ELEMENT REFERENCES ---
+const views = {
+  control_room: document.getElementById("view-control-room"),
+  scenario: document.getElementById("view-scenario"),
+};
+const alarmListEl = document.getElementById("alarm-list");
+const timeDisplayEl = document.querySelector(".header-time");
+const sopModal = document.getElementById("modal-sop");
+const btnSop = document.getElementById("btn-sop");
+const btnCloseSop = document.getElementById("btn-close-sop");
+const colleagueAvatarEl = document.getElementById("colleague-avatar");
+const colleagueSpeechBubbleEl = document.getElementById(
+  "colleague-speech-bubble"
+);
+const scenarioTitleEl = document.getElementById("scenario-title");
+const scenarioScadaPanelEl = document.getElementById("scenario-scada-panel");
+const scenarioChoicesEl = document.getElementById("scenario-choices");
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Press Start 2P', cursive;
-}
+// --- GAME STATE ---
+const gameState = {
+  shiftTime: 8.0,
+  alarms: [],
+  currentScenario: {
+    problemId: null,
+    trueCause: null,
+    currentSceneId: null,
+  },
+};
 
-body {
-    background-color: #34495e;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    overflow: hidden;
-}
+// --- DATA AGGREGATION ---
+const ALL_PROBLEMS = {};
+const SCENARIOS = {};
 
-#game-container {
-    width: 1024px;
-    height: 768px;
-    position: relative;
-    border: 4px solid var(--outline-color);
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
-    background-color: #000; /* Fallback background */
-}
+function aggregateScenarioData() {
+  const issue_data_sources = [
+    typeof issue1_data !== "undefined" ? issue1_data : null,
+    typeof issue4_data !== "undefined" ? issue4_data : null,
+    typeof issue7_data !== "undefined" ? issue7_data : null,
+    typeof issue8_data !== "undefined" ? issue8_data : null,
+    typeof issue10_data !== "undefined" ? issue10_data : null,
+  ];
 
-.view {
-    width: 100%;
-    height: 100%;
-    padding: 20px;
-    display: none;
-    position: absolute;
-    top: 0; left: 0;
-    background-size: cover;
-    image-rendering: pixelated;
-    transition: opacity 0.3s ease-in-out;
-    opacity: 0;
-}
-.view.active {
-    display: block;
-    opacity: 1;
-    z-index: 10;
-}
+  const scene_data_sources = [
+    typeof issue1_scenes !== "undefined" ? issue1_scenes : null,
+    typeof issue4_scenes !== "undefined" ? issue4_scenes : null,
+    typeof issue7_scenes !== "undefined" ? issue7_scenes : null,
+    typeof issue8_scenes !== "undefined" ? issue8_scenes : null,
+    typeof issue10_scenes !== "undefined" ? issue10_scenes : null,
+  ];
 
-#control-room-ui, .scenario-ui {
-    position: relative;
-    z-index: 20;
-    height: 100%;
-}
+  issue_data_sources.forEach((issue) => {
+    if (issue) ALL_PROBLEMS[issue.id] = issue;
+  });
 
-#control-room-ui {
-    display: grid;
-    grid-template-columns: 250px 1fr;
-    grid-template-rows: auto 1fr 150px;
-    grid-template-areas:
-        "operator scada"
-        "operator ."
-        "operator menu";
-    gap: 20px;
+  scene_data_sources.forEach((scene_collection) => {
+    if (scene_collection) Object.assign(SCENARIOS, scene_collection);
+  });
 }
 
-#operator-panel {
-    grid-area: operator;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-}
-#operator-panel img {
-    max-height: 80%;
-    image-rendering: pixelated;
-}
-#scada-panel {
-    grid-area: scada;
-    background-color: var(--panel-bg);
-    border: 4px solid var(--primary-blue);
-    border-radius: 8px;
-    padding: 15px;
-    color: var(--text-color);
-}
-.scada-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid var(--primary-blue);
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-}
-.scada-header h1 { font-size: 20px; }
-.header-time { font-size: 14px; }
-.scada-alarms h2 {
-    text-align: center;
-    color: var(--alarm-red);
-    margin-bottom: 15px;
-    animation: blink 1.5s infinite;
-}
-.alarm-item {
-    padding: 5px;
-    cursor: pointer;
-    list-style: none;
-    border-radius: 4px;
-    font-size: 14px;
-}
-.alarm-item:hover { background-color: var(--primary-blue); }
-.alarm-item.solved {
-    color: #95a5a6; /* Muted color for solved alarms */
-    text-decoration: line-through;
-    cursor: not-allowed;
-}
-.alarm-item.solved:hover { background-color: transparent; }
-
-#menu-panel {
-    grid-area: menu;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-.menu-button {
-    background-color: var(--primary-blue);
-    border: 3px solid var(--outline-color);
-    border-radius: 8px;
-    color: var(--text-color);
-    font-size: 20px;
-    cursor: pointer;
-    box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
-    transition: all 0.1s ease-in-out;
-}
-.menu-button:hover {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+// --- GAME ENGINE FUNCTIONS ---
+function switchView(viewName, location = "control_room") {
+  Object.values(views).forEach((view) => view.classList.remove("active"));
+  const activeView = views[viewName];
+  if (activeView) {
+    // Correct path relative to index.html
+    activeView.style.backgroundImage = `url('img/backgrounds/${location}.png')`;
+    activeView.classList.add("active");
+  }
 }
 
-.scenario-ui {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 20px;
+function renderAlarms() {
+  alarmListEl.innerHTML = "";
+  gameState.alarms.forEach((alarm) => {
+    const alarmItem = document.createElement("li");
+    alarmItem.className = alarm.solved ? "alarm-item solved" : "alarm-item";
+    alarmItem.textContent = `> ${alarm.title}`;
+    if (!alarm.solved) {
+      alarmItem.addEventListener("click", () => startScenario(alarm.id));
+    }
+    alarmListEl.appendChild(alarmItem);
+  });
 }
-.scenario-colleague {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: center;
-}
-.scenario-colleague img {
-    height: 300px; 
-    image-rendering: pixelated;
-    margin-bottom: 20px;
-}
-.speech-bubble {
-    width: 100%;
-    background-color: var(--text-color);
-    color: var(--outline-color);
-    border: 3px solid var(--outline-color);
-    border-radius: 8px;
-    padding: 15px;
-    font-size: 12px;
-    line-height: 1.4;
-    position: relative;
-    min-height: 150px;
-}
-.speech-bubble::after {
-    content: '';
-    position: absolute;
-    top: -18px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 0 15px 15px 15px;
-    border-style: solid;
-    border-color: transparent transparent var(--outline-color) transparent;
-}
-.scenario-main { display: flex; flex-direction: column; }
-.scenario-main h1 { text-align: center; color: var(--alarm-red); margin-bottom: 20px; }
-.scenario-main .scada-panel {
-    background-color: var(--panel-bg);
-    border: 4px solid var(--primary-blue);
-    padding: 15px;
-    margin-bottom: 20px;
-    font-size: 14px;
-    white-space: pre-wrap;
-}
-.choices-grid { margin-top: auto; display: grid; grid-template-columns: 1fr; gap: 15px; }
 
-.modal-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+function updateTimeDisplay() {
+  const hours = Math.floor(gameState.shiftTime);
+  const minutes = Math.round((gameState.shiftTime % 1) * 60);
+  const formattedTime = `${String(hours).padStart(2, "0")}:${String(
+    minutes
+  ).padStart(2, "0")}`;
+  timeDisplayEl.textContent = `SHIFT TIME: ${formattedTime}`;
 }
-.modal-overlay.hidden { display: none; }
-.modal-content {
-    background-color: #34495e;
-    color: var(--text-color);
-    padding: 20px;
-    border: 4px solid var(--outline-color);
-    border-radius: 8px;
-    width: 90%; max-width: 800px;
-    text-align: center;
-}
-.modal-content h1 { margin-bottom: 20px; color: var(--primary-blue); }
-.sop-content {
-    text-align: left;
-    background-color: rgba(255,255,255,0.1);
-    padding: 15px;
-    border-radius: 4px;
-    font-size: 14px;
-    line-height: 1.5;
-    max-height: 50vh;
-    overflow-y: auto;
-}
-.sop-content h3 { margin-top: 10px; color: var(--primary-blue); }
-.modal-content .menu-button { margin-top: 20px; width: 50%; }
 
-@keyframes blink { 50% { opacity: 0.5; } }
+function startScenario(problemId) {
+  const problem = ALL_PROBLEMS[problemId];
+  // This will now gracefully handle any placeholder that was missed
+  if (!problem || !problem.causes || problem.causes.length === 0) {
+    renderScene(`${problemId}_start`, { isPlaceholder: true });
+    return;
+  }
+
+  gameState.currentScenario.problemId = problemId;
+  gameState.currentScenario.trueCause =
+    problem.causes[Math.floor(Math.random() * problem.causes.length)];
+  renderScene(`${problemId}_start`, SCENARIOS[`${problemId}_start`]);
+}
+
+function renderScene(sceneId, scene) {
+  gameState.currentScenario.currentSceneId = sceneId;
+  if (!scene) {
+    // Failsafe if a scene is missing from the data files
+    scene = { isPlaceholder: true };
+  }
+
+  if (scene.isPlaceholder) {
+    const problemTitle =
+      ALL_PROBLEMS[gameState.currentScenario.problemId]?.title ||
+      "Under Development";
+    switchView("scenario", "control_room");
+    scenarioTitleEl.textContent = problemTitle;
+    colleagueSpeechBubbleEl.textContent =
+      "This scenario is still under development. Please select another alarm.";
+    scenarioScadaPanelEl.style.display = "none";
+    scenarioChoicesEl.innerHTML = "";
+    const btn = document.createElement("button");
+    btn.textContent = "Return to Control Room";
+    btn.className = "menu-button";
+    btn.onclick = () => endScenario(false); // End without solving
+    scenarioChoicesEl.appendChild(btn);
+    return;
+  }
+
+  // --- Render a normal scene ---
+  switchView("scenario", scene.location || "control_room");
+  scenarioTitleEl.textContent =
+    ALL_PROBLEMS[gameState.currentScenario.problemId].title;
+  colleagueAvatarEl.src = "img/characters/operator-neutral.png";
+  colleagueSpeechBubbleEl.textContent = scene.colleagueText || "";
+
+  scenarioScadaPanelEl.style.display = scene.scadaText ? "block" : "none";
+  if (scene.scadaText) {
+    scenarioScadaPanelEl.textContent = scene.scadaText;
+  }
+
+  scenarioChoicesEl.innerHTML = "";
+  if (scene.isSolution) {
+    const btn = document.createElement("button");
+    btn.textContent = "Problem Solved!";
+    btn.className = "menu-button";
+    btn.onclick = () => endScenario(true); // End with solving
+    scenarioChoicesEl.appendChild(btn);
+  } else if (scene.choices) {
+    scene.choices.forEach((choice) => {
+      const btn = document.createElement("button");
+      btn.textContent = choice.text;
+      btn.className = "menu-button";
+      btn.onclick = () => {
+        const nextSceneId = choice.action(gameState);
+        if (typeof nextSceneId === "string") {
+          renderScene(nextSceneId, SCENARIOS[nextSceneId]);
+        }
+      };
+      scenarioChoicesEl.appendChild(btn);
+    });
+  }
+}
+
+function handleIncorrectChoice(feedbackText, returnSceneId) {
+  colleagueAvatarEl.src = "img/characters/operator-concerned.png";
+  colleagueSpeechBubbleEl.textContent = feedbackText;
+
+  const btn = document.createElement("button");
+  btn.textContent = "Okay, let me try again.";
+  btn.className = "menu-button";
+  btn.onclick = () => renderScene(returnSceneId, SCENARIOS[returnSceneId]);
+  scenarioChoicesEl.innerHTML = "";
+  scenarioChoicesEl.appendChild(btn);
+  return null; // Return null to prevent the engine from trying to render a scene
+}
+
+function endScenario(wasSolved) {
+  if (wasSolved) {
+    const currentAlarm = gameState.alarms.find(
+      (a) => a.id === gameState.currentScenario.problemId
+    );
+    if (currentAlarm) currentAlarm.solved = true;
+    gameState.shiftTime += 1.5; // Advance time only on successful solve
+  }
+
+  const allSolved = gameState.alarms.every((a) => a.solved);
+  if (allSolved || gameState.shiftTime >= 16) {
+    const endShiftModal = document.getElementById("modal-end-shift");
+    if (endShiftModal) endShiftModal.classList.remove("hidden");
+  } else {
+    switchView("control_room");
+    updateTimeDisplay();
+    renderAlarms();
+  }
+}
+
+function startNewShift() {
+  const endShiftModal = document.getElementById("modal-end-shift");
+  if (endShiftModal) endShiftModal.classList.add("hidden");
+
+  gameState.shiftTime = 8.0;
+  // Create a fresh copy of the problems for the new shift
+  gameState.alarms = Object.values(ALL_PROBLEMS).map((p) => ({
+    id: p.id,
+    title: p.title,
+    solved: false,
+  }));
+  updateTimeDisplay();
+  renderAlarms();
+  switchView("control_room");
+}
+
+function initializeGame() {
+  // First, aggregate the data from our separate files
+  aggregateScenarioData();
+
+  // Then, set up the game as before
+  if (btnSop)
+    btnSop.addEventListener("click", () => sopModal.classList.remove("hidden"));
+  if (btnCloseSop)
+    btnCloseSop.addEventListener("click", () =>
+      sopModal.classList.add("hidden")
+    );
+
+  const labsBtn = document.getElementById("btn-labs");
+  if (labsBtn)
+    labsBtn.addEventListener("click", () =>
+      alert("Simulator Labs are under development.")
+    );
+
+  const restartBtn = document.getElementById("btn-restart-shift");
+  if (restartBtn) restartBtn.addEventListener("click", startNewShift);
+
+  startNewShift();
+}
+
+// Start the game once the DOM is fully loaded
+document.addEventListener("DOMContentLoaded", initializeGame);

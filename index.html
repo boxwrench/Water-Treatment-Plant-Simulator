@@ -8,9 +8,6 @@
   </head>
   <body>
     <div id="game-container">
-      <!-- The background is now applied directly to the active .view div -->
-
-      <!-- VIEW: CONTROL ROOM (HUB) -->
       <div id="view-control-room" class="view active">
         <div id="control-room-ui">
           <div id="operator-panel">
@@ -33,7 +30,6 @@
         </div>
       </div>
 
-      <!-- VIEW: SCENARIO -->
       <div id="view-scenario" class="view">
         <div class="scenario-ui">
           <div class="scenario-colleague">
@@ -53,39 +49,12 @@
       </div>
     </div>
 
-    <!-- MODALS (Hidden by default) -->
-    <div id="modal-sop" class="modal-overlay hidden">
-      <div class="modal-content">
-        <h1>S.O.P. MANUAL</h1>
-        <div class="sop-content">
-          <h3>VERIFYING ANALYZER READINGS</h3>
-          <p>
-            When a SCADA alarm occurs for an analyzer reading, the first step is
-            to verify if the reading is legitimate. This is typically done by
-            taking a manual "grab sample" and testing it on a separate benchtop
-            unit.
-          </p>
-          <h3>BASIC PUMP TROUBLESHOOTING</h3>
-          <p>
-            If a pump is suspected to be faulty, check SCADA for its status
-            (Running/Stopped/Fault). If stopped, check the fault type. If
-            running but ineffective, investigate physically. Always follow LOTO
-            procedures before physical maintenance.
-          </p>
-        </div>
-        <button id="btn-close-sop" class="menu-button">CLOSE</button>
-      </div>
-    </div>
-    <div id="modal-end-shift" class="modal-overlay hidden">
-      <div class="modal-content">
-        <h1>SHIFT COMPLETE!</h1>
-        <button id="btn-restart-shift" class="menu-button">
-          START NEW SHIFT
-        </button>
-      </div>
-    </div>
+    <script defer src="js/scenarios/issue1_filterBreakthrough.js"></script>
+    <script defer src="js/scenarios/issue4_chloraminationImbalance.js"></script>
+    <script defer src="js/scenarios/issue7_weakChemicalStrength.js"></script>
+    <script defer src="js/scenarios/issue8_backwashWaterRecovery.js"></script>
+    <script defer src="js/scenarios/issue10_finishedWaterQuality.js"></script>
 
-    <!-- We are using a single, reliable JS file to ensure stability. -->
-    <script src="js/main.js"></script>
+    <script defer src="js/main.js"></script>
   </body>
 </html>
