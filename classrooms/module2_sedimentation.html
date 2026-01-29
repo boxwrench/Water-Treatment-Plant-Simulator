@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>100 MGD SCADA — Sedimentation & Clarification</title>
+    <style>
+        :root {
+            --bg-deep: #0a0e17;
+            --panel-bg: rgba(22, 33, 62, 0.75);
+            --panel-border: rgba(0, 255, 136, 0.3);
+            --glass-blur: 15px;
+            --accent-safe: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff4444;
+            --text-primary: #e8e8e8;
+            --text-secondary: #888888;
+            --data-font: 'Consolas', 'Monaco', monospace;
+            --ui-font: 'Inter', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: var(--ui-font);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        header {
+            background: var(--panel-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border-bottom: 1px solid var(--panel-border);
+            padding: 12px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-safe);
+        }
+
+        .plant-status {
+            font-family: var(--data-font);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            height: calc(100vh - 100px);
+        }
+
+        #controls {
+            width: 380px;
+            background: linear-gradient(180deg, rgba(16, 26, 46, 0.95), rgba(10, 14, 23, 0.95));
+            backdrop-filter: blur(var(--glass-blur));
+            border-right: 1px solid var(--panel-border);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #visualization {
+            flex: 1;
+            position: relative;
+            background: #000;
+        }
+
+        .control-group {
+            margin-bottom: 22px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .data-readout {
+            font-family: var(--data-font);
+            color: var(--accent-safe);
+            font-size: 1rem;
+        }
+
+        input[type=range], select {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 255, 136, 0.1);
+            appearance: none;
+            outline: none;
+            border-radius: 2px;
+        }
+
+        select {
+            height: 30px;
+            background: rgba(16, 26, 46, 0.8);
+            border: 1px solid var(--panel-border);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            padding: 0 10px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-safe);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--accent-safe);
+        }
+
+        .scada-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .scada-card {
+            background: rgba(0, 255, 136, 0.03);
+            border: 1px solid rgba(0, 255, 136, 0.1);
+            padding: 12px;
+            text-align: center;
+            border-radius: 4px;
+        }
+
+        .scada-card label {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .scada-card .value {
+            font-family: var(--data-font);
+            font-size: 0.95rem;
+            color: var(--accent-safe);
+        }
+
+        #alarm {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            font-family: var(--data-font);
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+            border-radius: 4px;
+            animation: scada-pulse 1.5s infinite;
+        }
+
+        @keyframes scada-pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; box-shadow: 0 0 20px rgba(255, 68, 68, 0.3); }
+            100% { opacity: 0.8; }
+        }
+
+        footer {
+            height: 60px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border-top: 1px solid var(--panel-border);
+            padding: 0 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analogy {
+            font-size: 0.8rem;
+            color: var(--warning);
+            font-style: italic;
+            max-width: 60%;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--accent-safe);
+            color: var(--accent-safe);
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+
+        .btn:hover {
+            background: var(--accent-safe);
+            color: var(--bg-deep);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Sedimentation & Clarification — Basin 4</h1>
+        <div class="plant-status">PLANT CAPACITY: 100 MGD | STATUS: ONLINE</div>
+    </header>
+
+    <main>
+        <section id="controls">
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Flow Rate (MGD)</span>
+                    <span class="data-readout" id="readout-flow">100</span>
+                </div>
+                <input type="range" id="slider-flow" min="50" max="150" value="100" step="1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Temperature (°C)</span>
+                    <span class="data-readout" id="readout-temp">15</span>
+                </div>
+                <input type="range" id="slider-temp" min="1" max="30" value="15" step="1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Particle Quality</span>
+                </div>
+                <select id="select-size">
+                    <option value="pin">Pin Floc (Poor Coagulation)</option>
+                    <option value="normal" selected>Normal Floc (Optimized)</option>
+                    <option value="macro">Macro Floc (Ballasted)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Basin Depth (ft)</span>
+                    <span class="data-readout" id="readout-depth">12</span>
+                </div>
+                <input type="range" id="slider-depth" min="8" max="16" value="12" step="0.5">
+            </div>
+
+            <div class="scada-grid">
+                <div class="scada-card">
+                    <label>Overflow Rate (SOR)</label>
+                    <div class="value" id="val-sor">0 GPD/ft²</div>
+                </div>
+                <div class="scada-card">
+                    <label>Settling Velocity</label>
+                    <div class="value" id="val-vs">0.0 ft/hr</div>
+                </div>
+                <div class="scada-card">
+                    <label>Detention Time</label>
+                    <div class="value" id="val-dt">2.4 hr</div>
+                </div>
+                <div class="scada-card">
+                    <label>Basin Area</label>
+                    <div class="value">7,854 ft²</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="visualization">
+            <div id="alarm">! SYSTEM ALARM: HIGH TURBIDITY CARRYOVER</div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="analogy">
+            <b>Analogy:</b> Imagine panning for gold. If the stream rushes too fast, even heavy nuggets get swept away. In cold water (like honey), everything sinks slower.
+        </div>
+        <div class="actions">
+            <a href="https://en.wikipedia.org/wiki/Sedimentation_(water_treatment)" target="_blank" class="btn">Learn More</a>
+            <button class="btn" onclick="location.reload()">Reset SCADA</button>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script>
+        // --- HYDRAULICS & PHYSICS ---
+        const HYDRAULICS = {
+            TOTAL_PLANT_MGD: 100,
+            TRAINS: 14,
+            CLARIFIER_DIAMETER: 100, // ft
+            CLARIFIER_AREA: 7854, // sqft
+            
+            getTrainFlowGPD(totalMGD) { return (totalMGD / this.TRAINS) * 1000000; },
+            viscosity(T) { return 0.00002414 * Math.pow(10, 247.8 / (T + 133.15)); },
+            
+            calculateVs(size, T) {
+                const g = 9.81;
+                const mu = this.viscosity(T);
+                const rhoW = 1000;
+                const rhoP = 1040; // Floc density
+                
+                let d = (size === 'pin' ? 0.00003 : size === 'normal' ? 0.00012 : 0.00045);
+                const vs_ms = (g * (rhoP - rhoW) * d * d) / (18 * mu);
+                return vs_ms * 11811; // ft/hr
+            }
+        };
+
+        let state = {
+            flow: 100, temp: 15, size: 'normal', depth: 12,
+            sor: 0, vs: 0, dt: 0,
+            particles: []
+        };
+
+        // --- P5.JS VISUALIZATION ---
+        new p5((p) => {
+            p.setup = () => {
+                const canvas = p.createCanvas(
+                    p.select('#visualization').width,
+                    p.select('#visualization').height
+                );
+                canvas.parent('visualization');
+                initParticles();
+            };
+
+            function initParticles() {
+                state.particles = [];
+                for(let i=0; i<150; i++) {
+                    state.particles.push({
+                        x: 50 + p.random(30), // Center inlet point
+                        y: p.height * 0.4,
+                        settled: false,
+                        carried: false,
+                        size: p.random(2, 5)
+                    });
+                }
+            }
+
+            p.draw = () => {
+                p.background(10, 14, 23);
+                
+                // Update Physics
+                const q_train = HYDRAULICS.getTrainFlowGPD(state.flow);
+                state.sor = q_train / HYDRAULICS.CLARIFIER_AREA;
+                state.vs = HYDRAULICS.calculateVs(state.size, state.temp);
+                const volume = HYDRAULICS.CLARIFIER_AREA * state.depth * 7.48;
+                state.dt = (volume / q_train) * 24;
+
+                updateUI();
+                drawClarifierSide();
+                updateParticles();
+                checkAlarms();
+            };
+
+            function drawClarifierSide() {
+                const xStart = 50;
+                const xEnd = p.width - 50;
+                const yTop = 100;
+                const yBot = p.height - 100;
+                const midX = (xStart + xEnd) / 2;
+
+                // Concrete Structure
+                p.fill(60); p.noStroke();
+                p.rect(xStart-10, yTop-20, xEnd-xStart+20, 20); // Top walkways
+                p.beginShape();
+                p.vertex(xStart, yTop);
+                p.vertex(xStart, yBot);
+                p.vertex(midX - 20, yBot + 20); // Sludge hopper
+                p.vertex(midX + 20, yBot + 20);
+                p.vertex(xEnd, yBot);
+                p.vertex(xEnd, yTop);
+                p.endShape(p.CLOSE);
+
+                // Water Layer
+                p.fill(30, 80, 150, 150);
+                p.beginShape();
+                p.vertex(xStart+5, yTop+5);
+                p.vertex(xStart+5, yBot-5);
+                p.vertex(midX - 15, yBot + 15);
+                p.vertex(midX+15, yBot+15);
+                p.vertex(xEnd-5, yBot-5);
+                p.vertex(xEnd-5, yTop+5);
+                p.endShape(p.CLOSE);
+
+                // Sludge Blanket
+                p.fill(80, 50, 20, 180);
+                p.beginShape();
+                p.vertex(xStart+20, yBot - 20);
+                p.vertex(midX-15, yBot+15);
+                p.vertex(midX+15, yBot+15);
+                p.vertex(xEnd-20, yBot - 20);
+                p.endShape(p.CLOSE);
+
+                // Center Well (Inlet)
+                p.fill(100, 100); p.stroke(150);
+                p.rect(midX - 30, yTop, 60, yBot - yTop - 40);
+                
+                // Weir Launder (Carryover Point)
+                p.fill(0, 200, 255); p.noStroke();
+                p.rect(xStart, yTop-5, 20, 10);
+                p.rect(xEnd-20, yTop-5, 20, 10);
+            }
+
+            function updateParticles() {
+                const horizFlow = (state.flow / 100) * 1.5;
+                const vs_vis = state.vs / 8;
+                const xStart = 50;
+                const xEnd = p.width - 50;
+                const yTop = 100;
+                const yBot = p.height - 100;
+                const midX = (xStart + xEnd) / 2;
+
+                state.particles.forEach(pt => {
+                    if(!pt.settled && !pt.carried) {
+                        // Move radially out from center well
+                        const dir = pt.x < midX ? -1 : 1;
+                        pt.x += dir * horizFlow * (1 - (Math.abs(pt.x - midX) / (p.width/2)));
+                        pt.y += vs_vis;
+
+                        // Add slight jitter
+                        pt.x += p.random(-0.5, 0.5);
+
+                        // Check Settlement
+                        if(pt.y > yBot - 20) pt.settled = true;
+
+                        // Check Carryover (reached weir)
+                        if((pt.x < xStart + 20 || pt.x > xEnd - 20) && pt.y < yTop + 10) {
+                            pt.carried = true;
+                        }
+
+                        // Containment & Recycle
+                        if(pt.carried || pt.y < yTop || pt.x < 0 || pt.x > p.width) {
+                           pt.x = midX + p.random(-10, 10);
+                           pt.y = yTop + p.random(50);
+                           pt.carried = false;
+                        }
+                    } else if(pt.settled) {
+                        // Sludge moves toward center hopper slowly
+                        const dir = pt.x < midX ? 0.2 : -0.2;
+                        pt.x += dir;
+                        if(Math.abs(pt.x - midX) < 5) {
+                            pt.settled = false; pt.x = midX; pt.y = yTop;
+                        }
+                    }
+
+                    // Draw
+                    let col = pt.carried ? p.color(255, 68, 68) : pt.settled ? p.color(100, 70, 30) : p.color(0, 255, 136);
+                    p.fill(col); p.noStroke();
+                    p.ellipse(pt.x, pt.y, pt.size);
+                });
+            }
+
+            function updateUI() {
+                p.select('#val-sor').html(`${Math.round(state.sor)} GPD/ft²`);
+                p.select('#val-vs').html(`${state.vs.toFixed(2)} ft/hr`);
+                p.select('#val-dt').html(`${state.dt.toFixed(1)} hr`);
+            }
+
+            function checkAlarms() {
+                const alarmBox = p.select('#alarm');
+                const criticalSOR = state.vs * (7.48 * 24); // simplistic conversion
+                if (state.sor > criticalSOR * 0.8) {
+                    alarmBox.style('display', 'block');
+                } else {
+                    alarmBox.style('display', 'none');
+                }
+            }
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.select('#visualization').width, p.select('#visualization').height);
+            };
+        });
+
+        // --- DOM EVENT LISTENERS ---
+        document.getElementById('slider-flow').addEventListener('input', (e) => {
+            state.flow = parseInt(e.target.value);
+            document.getElementById('readout-flow').innerText = state.flow;
+        });
+        document.getElementById('slider-temp').addEventListener('input', (e) => {
+            state.temp = parseInt(e.target.value);
+            document.getElementById('readout-temp').innerText = state.temp;
+        });
+        document.getElementById('select-size').addEventListener('change', (e) => {
+            state.size = e.target.value;
+        });
+        document.getElementById('slider-depth').addEventListener('input', (e) => {
+            state.depth = parseFloat(e.target.value);
+            document.getElementById('readout-depth').innerText = state.depth;
+        });
+    </script>
+</body>
+</html>

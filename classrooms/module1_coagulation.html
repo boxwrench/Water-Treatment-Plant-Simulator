@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>100 MGD SCADA — Coagulation & Flocculation</title>
+    <style>
+        /* SCADA Design Tokens - High Performance HMI */
+        :root {
+            --bg-deep: #0a0e17;
+            --panel-bg: rgba(22, 33, 62, 0.75);
+            --panel-border: rgba(0, 255, 136, 0.3);
+            --glass-blur: 15px;
+            --accent-safe: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff4444;
+            --text-primary: #e8e8e8;
+            --text-secondary: #888888;
+            --data-font: 'Consolas', 'Monaco', monospace;
+            --ui-font: 'Inter', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: var(--ui-font);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        header {
+            background: var(--panel-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border-bottom: 1px solid var(--panel-border);
+            padding: 12px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-safe);
+        }
+
+        .plant-status {
+            font-family: var(--data-font);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            height: calc(100vh - 100px);
+        }
+
+        #controls {
+            width: 380px;
+            background: linear-gradient(180deg, rgba(16, 26, 46, 0.95), rgba(10, 14, 23, 0.95));
+            backdrop-filter: blur(var(--glass-blur));
+            border-right: 1px solid var(--panel-border);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #visualization {
+            flex: 1;
+            position: relative;
+            background: #000;
+        }
+
+        .control-group {
+            margin-bottom: 22px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .data-readout {
+            font-family: var(--data-font);
+            color: var(--accent-safe);
+            font-size: 1rem;
+        }
+
+        input[type=range] {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 255, 136, 0.1);
+            appearance: none;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-safe);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--accent-safe);
+        }
+
+        .scada-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .scada-card {
+            background: rgba(0, 255, 136, 0.03);
+            border: 1px solid rgba(0, 255, 136, 0.1);
+            padding: 12px;
+            text-align: center;
+            border-radius: 4px;
+        }
+
+        .scada-card label {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .scada-card .value {
+            font-family: var(--data-font);
+            font-size: 1rem;
+            color: var(--accent-safe);
+        }
+
+        #alarm {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            font-family: var(--data-font);
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+            border-radius: 4px;
+            animation: scada-pulse 1.5s infinite;
+        }
+
+        @keyframes scada-pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; box-shadow: 0 0 20px rgba(255, 68, 68, 0.3); }
+            100% { opacity: 0.8; }
+        }
+
+        footer {
+            height: 60px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border-top: 1px solid var(--panel-border);
+            padding: 0 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analogy {
+            font-size: 0.8rem;
+            color: var(--warning);
+            font-style: italic;
+            max-width: 60%;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--accent-safe);
+            color: var(--accent-safe);
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+
+        .btn:hover {
+            background: var(--accent-safe);
+            color: var(--bg-deep);
+        }
+
+        .tooltip {
+            cursor: help;
+            border-bottom: 1px dotted var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Coagulation & Flocculation — Train A</h1>
+        <div class="plant-status">PLANT CAPACITY: 100 MGD | STATUS: ONLINE</div>
+    </header>
+
+    <main>
+        <section id="controls">
+            <div class="control-group">
+                <div class="control-label">
+                    <span class="tooltip" title="Alum or Polymer dosage in mg per Liter.">Coagulant Dose (mg/L)</span>
+                    <span class="data-readout" id="readout-dose">15</span>
+                </div>
+                <input type="range" id="slider-dose" min="0" max="50" value="15" step="1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span class="tooltip" title="Rapid mix speed to disperse chemicals.">Rapid Mix (RPM)</span>
+                    <span class="data-readout" id="readout-rpm">100</span>
+                </div>
+                <input type="range" id="slider-rpm" min="0" max="300" value="100" step="1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span class="tooltip" title="Gentle mix to promote floc growth.">Flocculation (RPM)</span>
+                    <span class="data-readout" id="readout-floc">20</span>
+                </div>
+                <input type="range" id="slider-floc" min="0" max="80" value="20" step="1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span class="tooltip" title="Water viscosity changes with temperature.">Temp (°C)</span>
+                    <span class="data-readout" id="readout-temp">15</span>
+                </div>
+                <input type="range" id="slider-temp" min="1" max="30" value="15" step="1">
+            </div>
+
+            <div class="scada-grid">
+                <div class="scada-card">
+                    <label>Velocity Gradient (G)</label>
+                    <div class="value" id="val-g">0 s⁻¹</div>
+                </div>
+                <div class="scada-card">
+                    <label>Train Flow</label>
+                    <div class="value">7.14 MGD</div>
+                </div>
+                <div class="scada-card">
+                    <label>Mixing Power</label>
+                    <div class="value" id="val-power">0.05 kW</div>
+                </div>
+                <div class="scada-card">
+                    <label>Viscosity (μ)</label>
+                    <div class="value" id="val-mu">1.1e-3</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="visualization">
+            <div id="alarm">! SYSTEM ALARM: CHARGE REVERSAL</div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="analogy">
+            <b>Analogy:</b> Imagine particles are ping-pong balls with magnets. Coagulant flips the magnets to attract. Mixing brings them together. Too much speed breaks the magnets apart.
+        </div>
+        <div class="actions">
+            <a href="https://en.wikipedia.org/wiki/Coagulation_(water_treatment)" target="_blank" class="btn">Learn More</a>
+            <button class="btn" onclick="location.reload()">Reset SCADA</button>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script>
+        // --- HYDRAULICS & PHYSICS ---
+        const HYDRAULICS = {
+            TOTAL_PLANT_MGD: 100,
+            TRAINS: 14,
+            TRAIN_FLOW_MGD: 7.14,
+            BASIN_VOLUME_GAL: 150000,
+            BASIN_VOLUME_M3: 567.8,
+            
+            viscosity(T) { return 0.00002414 * Math.pow(10, 247.8 / (T + 133.15)); },
+            calculateG(rpm, T) {
+                const P = 0.0001 * Math.pow(rpm, 3); // Scaled power
+                const mu = this.viscosity(T);
+                return Math.sqrt(P / (mu * this.BASIN_VOLUME_M3));
+            }
+        };
+
+        let state = {
+            dose: 15, rpm: 100, flocRPM: 20, temp: 15,
+            gValue: 0, mu: 0, power: 0,
+            particles: []
+        };
+
+        // --- P5.JS VISUALIZATION ---
+        new p5((p) => {
+            let engine, world;
+            let pObjects = [];
+            let paddles = [];
+            let waterLevel;
+
+            p.setup = () => {
+                const canvas = p.createCanvas(
+                    p.select('#visualization').width,
+                    p.select('#visualization').height
+                );
+                canvas.parent('visualization');
+
+                engine = Matter.Engine.create();
+                world = engine.world;
+                engine.gravity.y = 0.1; // Slight settling
+
+                waterLevel = p.height * 0.8;
+                initParticles();
+            };
+
+            function initParticles() {
+                // Clear existing
+                pObjects.forEach(obj => Matter.World.remove(world, obj.body));
+                pObjects = [];
+
+                for(let i=0; i<80; i++) {
+                    let x = p.random(p.width);
+                    let y = p.random(waterLevel);
+                    let body = Matter.Bodies.circle(x, y, 4, {
+                        friction: 0.1, restitution: 0.5,
+                        collisionFilter: { group: -1 } // Start as non-colliding
+                    });
+                    pObjects.push({ body, type: 'particle' });
+                    Matter.World.add(world, body);
+                }
+            }
+
+            p.draw = () => {
+                p.background(10, 14, 23);
+                Matter.Engine.update(engine);
+
+                // Update Physics
+                state.mu = HYDRAULICS.viscosity(state.temp);
+                state.gValue = HYDRAULICS.calculateG(state.rpm + state.flocRPM, state.temp);
+                state.power = 0.0001 * Math.pow(state.rpm + state.flocRPM, 3);
+
+                updateUI();
+                drawBasin();
+                drawPaddleWheels();
+                updateParticles();
+                checkAlarms();
+            };
+
+            function drawBasin() {
+                // Concrete Walls
+                p.fill(60); p.noStroke();
+                p.rect(0, waterLevel, p.width, p.height - waterLevel); // Floor
+                p.rect(0, 0, 20, p.height); // Wall Left
+
+                // Water Haze (NTU dependent)
+                p.fill(30, 80, 150, 100);
+                p.rect(20, 50, p.width - 20, waterLevel - 50);
+
+                // Surface Ripples (Perlin)
+                p.stroke(0, 255, 136, 150); p.noFill();
+                p.beginShape();
+                for(let x=20; x<p.width; x+=10) {
+                    let y = 50 + p.noise(x*0.01, p.frameCount*0.05) * (state.gValue / 20);
+                    p.vertex(x, y);
+                }
+                p.endShape();
+            }
+
+            function drawPaddleWheels() {
+                p.push();
+                p.translate(p.width/2, waterLevel/2);
+                p.rotate(p.frameCount * (state.gValue / 2000));
+                p.stroke(100); p.strokeWeight(4);
+                p.line(-100, 0, 100, 0);
+                p.line(0, -100, 0, 100);
+                p.fill(80); p.ellipse(0, 0, 20, 20);
+                p.pop();
+            }
+
+            function updateParticles() {
+                const agit = state.gValue / 50;
+                const sticky = (state.dose > 5 && state.dose < 40);
+                const sheared = state.gValue > 600;
+
+                pObjects.forEach(obj => {
+                    let b = obj.body;
+                    
+                    // Mixing forces
+                    Matter.Body.applyForce(b, b.position, {
+                        x: (p.noise(b.position.x, p.frameCount*0.01)-0.5) * agit * 0.001,
+                        y: (p.noise(b.position.y, p.frameCount*0.01)-0.5) * agit * 0.001
+                    });
+
+                    // Containment
+                    if(b.position.x > p.width) Matter.Body.setPosition(b, {x: 20, y: b.position.y});
+                    if(b.position.y > waterLevel) Matter.Body.setPosition(b, {x: b.position.x, y: 100});
+
+                    // Draw
+                    let col = sticky ? p.color(0, 255, 136) : p.color(200);
+                    if (state.dose >= 40) col = p.color(255, 68, 68);
+                    
+                    p.fill(col); p.noStroke();
+                    p.ellipse(b.position.x, b.position.y, sticky ? 10 : 4);
+                });
+
+                // Simplified Clumping Visualization
+                if (sticky && !sheared && p.frameCount % 60 === 0) {
+                    // Logic to visually "enlarge" sticky particles as flocs
+                }
+            }
+
+            function updateUI() {
+                p.select('#val-g').html(`${Math.round(state.gValue)} s⁻¹`);
+                p.select('#val-power').html(`${state.power.toFixed(2)} kW`);
+                p.select('#val-mu').html(`${state.mu.toExponential(2)}`);
+            }
+
+            function checkAlarms() {
+                const alarmBox = p.select('#alarm');
+                if (state.dose >= 40) {
+                    alarmBox.html("! SYSTEM ALARM: CHARGE REVERSAL (OVERDOSE)");
+                    alarmBox.style('display', 'block');
+                } else if (state.gValue > 600) {
+                    alarmBox.html("! SYSTEM ALARM: HIGH SHEAR (FLOC BREAKAGE)");
+                    alarmBox.style('display', 'block');
+                } else {
+                    alarmBox.style('display', 'none');
+                }
+            }
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.select('#visualization').width, p.select('#visualization').height);
+            };
+        });
+
+        // --- DOM EVENT LISTENERS ---
+        document.getElementById('slider-dose').addEventListener('input', (e) => {
+            state.dose = parseInt(e.target.value);
+            document.getElementById('readout-dose').innerText = state.dose;
+        });
+        document.getElementById('slider-rpm').addEventListener('input', (e) => {
+            state.rpm = parseInt(e.target.value);
+            document.getElementById('readout-rpm').innerText = state.rpm;
+        });
+        document.getElementById('slider-floc').addEventListener('input', (e) => {
+            state.flocRPM = parseInt(e.target.value);
+            document.getElementById('readout-floc').innerText = state.flocRPM;
+        });
+        document.getElementById('slider-temp').addEventListener('input', (e) => {
+            state.temp = parseInt(e.target.value);
+            document.getElementById('readout-temp').innerText = state.temp;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Treatment Classroom — Module 5: Distribution & Corrosion Control</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #1a1a2e;
+            color: #e8e8e8;
+            overflow-x: hidden;
+        }
+        .header {
+            background-color: #16213e;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #00ff88;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        .header p {
+            color: #888888;
+            font-size: 14px;
+        }
+        .main-container {
+            display: flex;
+            height: calc(100vh - 140px);
+        }
+        .left-panel {
+            width: 40%;
+            background-color: #16213e;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid #00ff88;
+        }
+        .right-panel {
+            width: 60%;
+            background-color: #1a1a2e;
+            position: relative;
+        }
+        .control-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #1a1a2e;
+            border-radius: 8px;
+        }
+        .control-section h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .temp-presets {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .temp-button {
+            flex: 1;
+            padding: 12px;
+            background-color: #0f3460;
+            color: #888888;
+            border: 2px solid #0f3460;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .temp-button.active {
+            background-color: #00ff88;
+            color: #1a1a2e;
+            border-color: #00ff88;
+        }
+        .temp-context {
+            font-size: 11px;
+            color: #888888;
+            margin-top: 5px;
+            padding: 8px;
+            background-color: rgba(0, 255, 136, 0.05);
+            border-radius: 5px;
+        }
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        .slider-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #00ff88;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #0f3460;
+            outline: none;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        .lsi-display {
+            background-color: #0f3460;
+            border: 3px solid #888888;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .lsi-display.corrosive {
+            border-color: #ff4444;
+            background-color: rgba(255, 68, 68, 0.1);
+        }
+        .lsi-display.balanced {
+            border-color: #00ff88;
+            background-color: rgba(0, 255, 136, 0.1);
+        }
+        .lsi-display.scaling {
+            border-color: #ffaa00;
+            background-color: rgba(255, 170, 0, 0.1);
+        }
+        .lsi-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 36px;
+            font-weight: bold;
+            color: #e8e8e8;
+        }
+        .lsi-label {
+            color: #888888;
+            font-size: 12px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .lsi-status {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .metric-display {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #0f3460;
+            border-radius: 5px;
+        }
+        .metric-label {
+            color: #888888;
+        }
+        .metric-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #e8e8e8;
+            font-weight: bold;
+        }
+        .status-indicator {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 8px 0;
+            font-size: 13px;
+            border-left: 4px solid;
+        }
+        .status-good {
+            background-color: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+        .status-warning {
+            background-color: rgba(255, 170, 0, 0.1);
+            border-color: #ffaa00;
+        }
+        .status-danger {
+            background-color: rgba(255, 68, 68, 0.1);
+            border-color: #ff4444;
+        }
+        .reset-button {
+            width: 100%;
+            padding: 15px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .reset-button:hover {
+            background-color: #cc0000;
+        }
+        .footer {
+            background-color: #16213e;
+            padding: 15px 20px;
+            border-top: 2px solid #00ff88;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .analogy-box {
+            flex: 1;
+            padding: 10px;
+            background-color: rgba(0, 255, 136, 0.1);
+            border-left: 4px solid #00ff88;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .learn-more {
+            margin-left: 20px;
+            padding: 10px 20px;
+            background-color: #00ff88;
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .learn-more:hover {
+            background-color: #00cc6f;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #00ff88;
+            margin-left: 5px;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 280px;
+            background-color: #16213e;
+            color: #e8e8e8;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid #00ff88;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        #visualization {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MODULE 5: DISTRIBUTION & CORROSION CONTROL</h1>
+        <p>Understanding LSI, Temperature Effects, and Distribution System Stability</p>
+    </div>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="control-section">
+                <h3>Water Chemistry</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>pH <span class="tooltip">?<span class="tooltiptext">Higher pH reduces corrosion (good) but may cause scaling (bad). Balance is key.</span></span></span>
+                        <span class="slider-value" id="phValue">7.8</span>
+                    </div>
+                    <input type="range" id="ph" min="6.5" max="9.5" value="7.8" step="0.1">
+                </div>
+
+                <div class="slider-label">
+                    <span>Temperature (°C) <span class="tooltip">?<span class="tooltiptext">Test at PLANT temp (15°C) AND at water heater temp (60°C) to see the full story. LSI shifts dramatically with temp!</span></span></span>
+                    <span class="slider-value" id="tempValue">15</span>
+                </div>
+                <div class="temp-presets">
+                    <button class="temp-button active" id="plantBtn" onclick="setTempPreset(15)">🏭 PLANT<br>15°C</button>
+                    <button class="temp-button" id="heaterBtn" onclick="setTempPreset(60)">🚿 HEATER<br>60°C</button>
+                    <button class="temp-button" id="customBtn">⚙ CUSTOM</button>
+                </div>
+                <div class="slider-group">
+                    <input type="range" id="temperature" min="5" max="80" value="15" step="1">
+                </div>
+                <div class="temp-context" id="tempContext">
+                    Testing at: PLANT temperature (15°C)
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Calcium Hardness (mg/L) <span class="tooltip">?<span class="tooltiptext">Calcium forms protective scale — but too much clogs pipes. Soft water is corrosive.</span></span></span>
+                        <span class="slider-value" id="calciumValue">100</span>
+                    </div>
+                    <input type="range" id="calcium" min="10" max="400" value="100" step="5">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Alkalinity (mg/L) <span class="tooltip">?<span class="tooltiptext">Buffering capacity. Low alkalinity = water swings corrosive easily. You want 60+.</span></span></span>
+                        <span class="slider-value" id="alkalinityValue">80</span>
+                    </div>
+                    <input type="range" id="alkalinity" min="10" max="300" value="80" step="5">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>TDS (mg/L) <span class="tooltip">?<span class="tooltiptext">Total dissolved solids. Affects ionic strength and conductivity. Salty water behaves differently.</span></span></span>
+                        <span class="slider-value" id="tdsValue">250</span>
+                    </div>
+                    <input type="range" id="tds" min="50" max="1000" value="250" step="10">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Distribution</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Water Age (days) <span class="tooltip">?<span class="tooltiptext">Time since water left plant. Old water at dead ends loses residual. >7 days = risky.</span></span></span>
+                        <span class="slider-value" id="ageValue">1</span>
+                    </div>
+                    <input type="range" id="waterAge" min="0" max="14" value="1" step="1">
+                </div>
+                <div class="metric-display">
+                    <span class="metric-label">Chloramine Residual:</span>
+                    <span class="metric-value" id="residualValue">2.0 mg/L</span>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>LSI Calculation</h3>
+                <div class="lsi-display" id="lsiDisplay">
+                    <div class="lsi-label">Langelier Saturation Index</div>
+                    <div class="lsi-value" id="lsiValue">-0.2</div>
+                    <div class="lsi-status" id="lsiStatus">Slightly Corrosive</div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Status</h3>
+                <div id="statusMessage" class="status-indicator status-good">
+                    ✓ Water chemistry balanced
+                </div>
+            </div>
+
+            <button class="reset-button" onclick="resetSimulation()">RESET SIMULATION</button>
+        </div>
+
+        <div class="right-panel">
+            <div id="visualization"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="analogy-box">
+            💡 <strong>Analogy:</strong> LSI is like a see-saw with your pipes in the middle. On one side: corrosive forces trying to dissolve your pipes and release lead. On the other side: scaling forces trying to clog them with chalk. Your job is to balance it. But here's the sneaky trick — when customers heat the water in their water heater, it's like someone jumped on the scaling side. Water you sent out perfectly balanced is now depositing white crud.
+        </div>
+        <a href="https://www.epa.gov/dwreginfo/corrosion-control-treatment" target="_blank" class="learn-more">📚 Learn More</a>
+    </div>
+
+    <script>
+// ═══════════════════════════════════════════════════════════
+// MODULE: DISTRIBUTION & CORROSION CONTROL
+// DOMAIN: Distribution
+// VERSION: 1.0
+// ═══════════════════════════════════════════════════════════
+
+// --- CONFIGURATION ---
+const CONFIG = {
+    canvasWidth: window.innerWidth * 0.6,
+    canvasHeight: window.innerHeight - 140,
+};
+
+// --- STATE ---
+let state = {
+    pH: 7.8,
+    temperature: 15,
+    tempPreset: 'plant',
+    calcium: 100,
+    alkalinity: 80,
+    tds: 250,
+    waterAge: 1,
+};
+
+// --- PHYSICS ENGINE ---
+function calculateLSI(pH, tempC, calcium, alkalinity, tds) {
+    // Langelier Saturation Index: LSI = pH - pHs
+    // pHs = (9.3 + A + B) - (C + D)
+
+    const tempK = tempC + 273;
+
+    const A = (Math.log10(tds) - 1) / 10;
+    const B = -13.12 * Math.log10(tempK) + 34.55;
+    const C = Math.log10(calcium) - 0.4;
+    const D = Math.log10(alkalinity);
+
+    const pHs = (9.3 + A + B) - (C + D);
+    const LSI = pH - pHs;
+
+    return LSI;
+}
+
+function interpretLSI(lsi) {
+    if (lsi < -0.5) {
+        return { type: 'corrosive', color: 'danger', label: 'Strongly Corrosive' };
+    } else if (lsi < -0.3) {
+        return { type: 'corrosive', color: 'warning', label: 'Moderately Corrosive' };
+    } else if (lsi <= 0.3) {
+        return { type: 'balanced', color: 'good', label: 'Balanced (Stable)' };
+    } else if (lsi <= 0.5) {
+        return { type: 'scaling', color: 'warning', label: 'Slightly Scaling' };
+    } else {
+        return { type: 'scaling', color: 'danger', label: 'Scale-Forming' };
+    }
+}
+
+function calculateResidual(waterAge) {
+    // Exponential decay: Residual(t) = Initial × exp(-k × t)
+    const initialResidual = 2.0; // mg/L
+    const decayRate = 0.1; // per day
+    return initialResidual * Math.exp(-decayRate * waterAge);
+}
+
+function calculateStatus() {
+    const lsi = calculateLSI(state.pH, state.temperature, state.calcium, state.alkalinity, state.tds);
+    const residual = calculateResidual(state.waterAge);
+    const interpretation = interpretLSI(lsi);
+
+    // Check customer complaint risk
+    if (state.temperature >= 60 && lsi > 0.5) {
+        return { type: 'warning', message: '☎ CUSTOMER COMPLAINT RISK - White scale deposits expected in water heaters' };
+    }
+
+    if (lsi < -0.5) {
+        return { type: 'danger', message: '⚠ STRONGLY CORROSIVE - Risk of pipe damage and lead/copper release' };
+    }
+    if (lsi > 0.5) {
+        return { type: 'warning', message: '⚠ SCALE-FORMING - Risk of capacity loss and customer complaints' };
+    }
+    if (state.waterAge > 10) {
+        return { type: 'danger', message: '⚠ DEAD END - Very old water, lost disinfection' };
+    }
+    if (state.waterAge > 7 && residual < 1.0) {
+        return { type: 'warning', message: '⚠ NITRIFICATION RISK - Bacteria growth, pH drop imminent' };
+    }
+    if (lsi >= -0.3 && lsi <= 0.3 && state.waterAge < 5) {
+        return { type: 'good', message: '✓ STABLE DISTRIBUTION - Balanced water, good residual' };
+    }
+
+    return { type: 'good', message: '✓ Water chemistry acceptable' };
+}
+
+function updateUI() {
+    document.getElementById('phValue').textContent = state.pH.toFixed(1);
+    document.getElementById('tempValue').textContent = state.temperature;
+    document.getElementById('calciumValue').textContent = state.calcium;
+    document.getElementById('alkalinityValue').textContent = state.alkalinity;
+    document.getElementById('tdsValue').textContent = state.tds;
+    document.getElementById('ageValue').textContent = state.waterAge;
+
+    const lsi = calculateLSI(state.pH, state.temperature, state.calcium, state.alkalinity, state.tds);
+    const interpretation = interpretLSI(lsi);
+    const residual = calculateResidual(state.waterAge);
+
+    document.getElementById('lsiValue').textContent = lsi.toFixed(2);
+    document.getElementById('lsiStatus').textContent = interpretation.label;
+    document.getElementById('residualValue').textContent = residual.toFixed(2) + ' mg/L';
+
+    const lsiDisplay = document.getElementById('lsiDisplay');
+    lsiDisplay.className = 'lsi-display ' + interpretation.type;
+
+    // Update temp context
+    let contextText = '';
+    if (state.tempPreset === 'plant') {
+        contextText = 'Testing at: PLANT temperature (15°C)';
+        if (lsi >= -0.3 && lsi <= 0.3) {
+            contextText += ' → LSI balanced at plant';
+        }
+    } else if (state.tempPreset === 'heater') {
+        contextText = 'Testing at: WATER HEATER temperature (60°C)';
+        if (lsi > 0.5) {
+            contextText += ' → LSI scaling! ☎ Customer complaint risk';
+        }
+    } else {
+        contextText = 'Testing at: CUSTOM temperature (' + state.temperature + '°C)';
+    }
+    document.getElementById('tempContext').textContent = contextText;
+
+    const status = calculateStatus();
+    const statusDiv = document.getElementById('statusMessage');
+    statusDiv.textContent = status.message;
+    statusDiv.className = 'status-indicator status-' + status.type;
+}
+
+function setTempPreset(temp) {
+    state.temperature = temp;
+    document.getElementById('temperature').value = temp;
+
+    if (temp === 15) {
+        state.tempPreset = 'plant';
+        document.getElementById('plantBtn').className = 'temp-button active';
+        document.getElementById('heaterBtn').className = 'temp-button';
+        document.getElementById('customBtn').className = 'temp-button';
+    } else if (temp === 60) {
+        state.tempPreset = 'heater';
+        document.getElementById('plantBtn').className = 'temp-button';
+        document.getElementById('heaterBtn').className = 'temp-button active';
+        document.getElementById('customBtn').className = 'temp-button';
+    }
+
+    updateUI();
+}
+
+// --- P5.JS SKETCH ---
+let sketch = function(p) {
+    p.setup = function() {
+        const canvas = p.createCanvas(CONFIG.canvasWidth, CONFIG.canvasHeight);
+        canvas.parent('visualization');
+    };
+
+    p.draw = function() {
+        p.background(26, 26, 46);
+
+        // LSI Balance Beam
+        drawBalanceBeam(p);
+
+        // Pipe Cross-Section
+        drawPipeCrossSection(p);
+
+        // Residual Decay Curve
+        drawResidualCurve(p);
+    };
+
+    function drawBalanceBeam(p) {
+        const beamX = CONFIG.canvasWidth / 2;
+        const beamY = 150;
+        const beamLength = 300;
+
+        p.fill(232, 232, 232);
+        p.noStroke();
+        p.textSize(16);
+        p.textAlign(p.CENTER);
+        p.text('LSI BALANCE BEAM', beamX, 30);
+
+        const lsi = calculateLSI(state.pH, state.temperature, state.calcium, state.alkalinity, state.tds);
+
+        // Fulcrum (pivot point at LSI = 0)
+        p.fill(100, 100, 100);
+        p.triangle(beamX - 15, beamY + 10, beamX + 15, beamY + 10, beamX, beamY - 10);
+        p.fill(232, 232, 232);
+        p.textSize(10);
+        p.text('LSI = 0', beamX, beamY + 25);
+        p.text('(Balance)', beamX, beamY + 37);
+
+        // Beam (rotates based on LSI)
+        const angle = lsi * 0.3; // Scale angle
+        p.push();
+        p.translate(beamX, beamY);
+        p.rotate(angle);
+
+        // Beam bar
+        p.fill(0, 255, 136);
+        p.rect(-beamLength/2, -10, beamLength, 20);
+
+        p.pop();
+
+        // Labels
+        p.fill(255, 68, 68);
+        p.textSize(12);
+        p.textAlign(p.LEFT);
+        p.text('Corrosive', beamX - beamLength/2 - 80, beamY);
+        p.text('(dissolves pipes)', beamX - beamLength/2 - 80, beamY + 15);
+
+        p.fill(255, 170, 0);
+        p.textAlign(p.RIGHT);
+        p.text('Scaling', beamX + beamLength/2 + 80, beamY);
+        p.text('(clogs pipes)', beamX + beamLength/2 + 80, beamY + 15);
+
+        // Current LSI value display
+        p.fill(232, 232, 232);
+        p.textAlign(p.CENTER);
+        p.textSize(14);
+        p.text('Current LSI: ' + lsi.toFixed(2), beamX, beamY + 60);
+
+        if (lsi < -0.3) {
+            p.fill(255, 68, 68);
+            p.text('← Beam tips LEFT (corrosive)', beamX, beamY + 80);
+        } else if (lsi > 0.3) {
+            p.fill(255, 170, 0);
+            p.text('Beam tips RIGHT (scaling) →', beamX, beamY + 80);
+        } else {
+            p.fill(0, 255, 136);
+            p.text('Beam balanced ✓', beamX, beamY + 80);
+        }
+    }
+
+    function drawPipeCrossSection(p) {
+        const pipeY = 250;
+        const pipeWidth = 200;
+        const pipeHeight = 80;
+        const spacing = 250;
+
+        p.fill(232, 232, 232);
+        p.noStroke();
+        p.textSize(16);
+        p.textAlign(p.CENTER);
+        p.text('PIPE CROSS-SECTION VIEWS', CONFIG.canvasWidth / 2, pipeY - 20);
+
+        const lsi = calculateLSI(state.pH, state.temperature, state.calcium, state.alkalinity, state.tds);
+
+        // Draw three pipes showing different states
+        const startX = (CONFIG.canvasWidth - spacing * 2) / 2;
+
+        // Corrosive pipe
+        p.textSize(12);
+        p.text('LSI < -0.3', startX, pipeY - 5);
+        p.text('Corrosive', startX, pipeY + pipeHeight + 20);
+
+        p.fill(100, 60, 60);
+        p.stroke(255, 68, 68);
+        p.strokeWeight(3);
+        p.rect(startX - pipeWidth/2, pipeY, pipeWidth, pipeHeight, 10);
+
+        // Pitting
+        p.fill(150, 80, 80);
+        p.noStroke();
+        for (let i = 0; i < 10; i++) {
+            p.circle(startX - pipeWidth/2 + p.random(10, pipeWidth - 10),
+                     pipeY + p.random(10, pipeHeight - 10), p.random(3, 8));
+        }
+
+        // Balanced pipe (highlight if current LSI is balanced)
+        p.fill(232, 232, 232);
+        p.textSize(12);
+        p.text('LSI ±0.3', startX + spacing, pipeY - 5);
+        p.text('Balanced', startX + spacing, pipeY + pipeHeight + 20);
+
+        if (lsi >= -0.3 && lsi <= 0.3) {
+            p.fill(0, 255, 136, 30);
+        } else {
+            p.fill(80, 100, 120);
+        }
+        p.stroke(0, 255, 136);
+        p.strokeWeight(lsi >= -0.3 && lsi <= 0.3 ? 5 : 3);
+        p.rect(startX + spacing - pipeWidth/2, pipeY, pipeWidth, pipeHeight, 10);
+
+        // Clear water
+        p.fill(100, 150, 255, 100);
+        p.noStroke();
+        p.rect(startX + spacing - pipeWidth/2 + 10, pipeY + 10, pipeWidth - 20, pipeHeight - 20, 5);
+
+        // Scaling pipe
+        p.fill(232, 232, 232);
+        p.textSize(12);
+        p.text('LSI > +0.3', startX + spacing * 2, pipeY - 5);
+        p.text('Scale-Forming', startX + spacing * 2, pipeY + pipeHeight + 20);
+
+        p.fill(120, 110, 90);
+        p.stroke(255, 170, 0);
+        p.strokeWeight(3);
+        p.rect(startX + spacing * 2 - pipeWidth/2, pipeY, pipeWidth, pipeHeight, 10);
+
+        // Scale deposits
+        p.fill(220, 220, 200);
+        p.noStroke();
+        for (let i = 0; i < 15; i++) {
+            p.circle(startX + spacing * 2 - pipeWidth/2 + p.random(20, pipeWidth - 20),
+                     pipeY + p.random(5, 15), p.random(8, 15));
+            p.circle(startX + spacing * 2 - pipeWidth/2 + p.random(20, pipeWidth - 20),
+                     pipeY + pipeHeight - p.random(5, 15), p.random(8, 15));
+        }
+
+        // Arrow pointing to current condition
+        if (lsi < -0.3) {
+            p.fill(255, 68, 68);
+            p.noStroke();
+            p.triangle(startX, pipeY - 20, startX - 10, pipeY - 30, startX + 10, pipeY - 30);
+        } else if (lsi > 0.3) {
+            p.fill(255, 170, 0);
+            p.noStroke();
+            p.triangle(startX + spacing * 2, pipeY - 20,
+                       startX + spacing * 2 - 10, pipeY - 30,
+                       startX + spacing * 2 + 10, pipeY - 30);
+        }
+    }
+
+    function drawResidualCurve(p) {
+        const graphX = 50;
+        const graphY = 420;
+        const graphWidth = CONFIG.canvasWidth - 100;
+        const graphHeight = 150;
+
+        p.fill(232, 232, 232);
+        p.noStroke();
+        p.textSize(14);
+        p.textAlign(p.LEFT);
+        p.text('CHLORAMINE RESIDUAL DECAY vs WATER AGE', graphX, graphY - 10);
+
+        // Axes
+        p.stroke(100, 100, 100);
+        p.strokeWeight(2);
+        p.line(graphX, graphY + graphHeight, graphX + graphWidth, graphY + graphHeight); // X
+        p.line(graphX, graphY, graphX, graphY + graphHeight); // Y
+
+        // Labels
+        p.fill(232, 232, 232);
+        p.noStroke();
+        p.textSize(11);
+        p.textAlign(p.CENTER);
+        p.text('Water Age (days)', graphX + graphWidth/2, graphY + graphHeight + 25);
+        p.push();
+        p.translate(graphX - 35, graphY + graphHeight/2);
+        p.rotate(-p.HALF_PI);
+        p.text('Residual (mg/L)', 0, 0);
+        p.pop();
+
+        // Decay curve
+        p.stroke(0, 255, 136);
+        p.strokeWeight(3);
+        p.noFill();
+        p.beginShape();
+        for (let age = 0; age <= 14; age += 0.5) {
+            const residual = calculateResidual(age);
+            const x = p.map(age, 0, 14, graphX, graphX + graphWidth);
+            const y = p.map(residual, 0, 2.5, graphY + graphHeight, graphY);
+            p.vertex(x, y);
+        }
+        p.endShape();
+
+        // Nitrification threshold line
+        const nitY = p.map(1.0, 0, 2.5, graphY + graphHeight, graphY);
+        p.stroke(255, 170, 0);
+        p.strokeWeight(2);
+        p.line(graphX, nitY, graphX + graphWidth, nitY);
+        p.fill(255, 170, 0);
+        p.noStroke();
+        p.textSize(10);
+        p.textAlign(p.RIGHT);
+        p.text('Nitrification threshold (1.0 mg/L)', graphX + graphWidth - 5, nitY - 5);
+
+        // Day 7 marker
+        const day7X = p.map(7, 0, 14, graphX, graphX + graphWidth);
+        p.stroke(255, 170, 0);
+        p.strokeWeight(1);
+        p.line(day7X, graphY, day7X, graphY + graphHeight);
+        p.fill(255, 170, 0);
+        p.noStroke();
+        p.textSize(10);
+        p.textAlign(p.CENTER);
+        p.text('Day 7', day7X, graphY - 5);
+
+        // Current position
+        const currentX = p.map(state.waterAge, 0, 14, graphX, graphX + graphWidth);
+        const currentResidual = calculateResidual(state.waterAge);
+        const currentY = p.map(currentResidual, 0, 2.5, graphY + graphHeight, graphY);
+        p.fill(255, 100, 100);
+        p.noStroke();
+        p.circle(currentX, currentY, 10);
+
+        // Color zones
+        p.fill(0, 255, 136, 30);
+        p.noStroke();
+        p.rect(graphX, graphY, graphWidth * (5/14), graphHeight); // Green zone (0-5 days)
+        p.fill(255, 170, 0, 20);
+        p.rect(graphX + graphWidth * (5/14), graphY, graphWidth * (4/14), graphHeight); // Amber (6-9)
+        p.fill(255, 68, 68, 20);
+        p.rect(graphX + graphWidth * (9/14), graphY, graphWidth * (5/14), graphHeight); // Red (10+)
+    }
+};
+
+new p5(sketch);
+
+// --- UI HANDLERS ---
+document.getElementById('ph').addEventListener('input', (e) => {
+    state.pH = parseFloat(e.target.value);
+    updateUI();
+});
+
+document.getElementById('temperature').addEventListener('input', (e) => {
+    state.temperature = parseInt(e.target.value);
+    state.tempPreset = 'custom';
+    document.getElementById('plantBtn').className = 'temp-button';
+    document.getElementById('heaterBtn').className = 'temp-button';
+    document.getElementById('customBtn').className = 'temp-button active';
+    updateUI();
+});
+
+document.getElementById('calcium').addEventListener('input', (e) => {
+    state.calcium = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('alkalinity').addEventListener('input', (e) => {
+    state.alkalinity = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('tds').addEventListener('input', (e) => {
+    state.tds = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('waterAge').addEventListener('input', (e) => {
+    state.waterAge = parseInt(e.target.value);
+    updateUI();
+});
+
+function resetSimulation() {
+    state.pH = 7.8;
+    state.temperature = 15;
+    state.tempPreset = 'plant';
+    state.calcium = 100;
+    state.alkalinity = 80;
+    state.tds = 250;
+    state.waterAge = 1;
+
+    document.getElementById('ph').value = 7.8;
+    document.getElementById('temperature').value = 15;
+    document.getElementById('calcium').value = 100;
+    document.getElementById('alkalinity').value = 80;
+    document.getElementById('tds').value = 250;
+    document.getElementById('waterAge').value = 1;
+
+    setTempPreset(15);
+    updateUI();
+}
+
+// Initial UI update
+updateUI();
+    </script>
+</body>
+</html>

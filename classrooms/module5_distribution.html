@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>100 MGD SCADA — Distribution & Corrosion Control</title>
+    <style>
+        :root {
+            --bg-deep: #0a0e17;
+            --panel-bg: rgba(22, 33, 62, 0.75);
+            --panel-border: rgba(0, 255, 136, 0.3);
+            --glass-blur: 15px;
+            --accent-safe: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff4444;
+            --text-primary: #e8e8e8;
+            --text-secondary: #888888;
+            --data-font: 'Consolas', 'Monaco', monospace;
+            --ui-font: 'Inter', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: var(--ui-font);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        header {
+            background: var(--panel-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border-bottom: 1px solid var(--panel-border);
+            padding: 12px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-safe);
+        }
+
+        .plant-status {
+            font-family: var(--data-font);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            height: calc(100vh - 100px);
+        }
+
+        #controls {
+            width: 380px;
+            background: linear-gradient(180deg, rgba(16, 26, 46, 0.95), rgba(10, 14, 23, 0.95));
+            backdrop-filter: blur(var(--glass-blur));
+            border-right: 1px solid var(--panel-border);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #visualization {
+            flex: 1;
+            position: relative;
+            background: #000;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .data-readout {
+            font-family: var(--data-font);
+            color: var(--accent-safe);
+            font-size: 1rem;
+        }
+
+        input[type=range], select {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 255, 136, 0.1);
+            appearance: none;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-safe);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--accent-safe);
+        }
+
+        .scada-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .scada-card {
+            background: rgba(0, 255, 136, 0.03);
+            border: 1px solid rgba(0, 255, 136, 0.1);
+            padding: 12px;
+            text-align: center;
+            border-radius: 4px;
+        }
+
+        .scada-card label {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .value {
+            font-family: var(--data-font);
+            font-size: 0.95rem;
+            color: var(--accent-safe);
+        }
+
+        .value.fail { color: var(--danger); }
+        .value.warn { color: var(--warning); }
+
+        #alarm {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            font-family: var(--data-font);
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+            border-radius: 4px;
+            animation: pulse-red 1.5s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; box-shadow: 0 0 15px var(--danger); }
+            100% { opacity: 0.8; }
+        }
+
+        footer {
+            height: 60px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border-top: 1px solid var(--panel-border);
+            padding: 0 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analogy {
+            font-size: 0.8rem;
+            color: var(--warning);
+            font-style: italic;
+            max-width: 60%;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--accent-safe);
+            color: var(--accent-safe);
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+
+        .btn:hover { background: var(--accent-safe); color: var(--bg-deep); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>High Service Pumping & Distribution</h1>
+        <div class="plant-status">PLANT CAPACITY: 100 MGD | STATUS: ONLINE</div>
+    </header>
+
+    <main>
+        <section id="controls">
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Demand Load (MGD)</span>
+                    <span class="data-readout" id="readout-demand">85</span>
+                </div>
+                <input type="range" id="slider-demand" min="20" max="110" value="85" step="1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Pump Pressure Setpoint (PSI)</span>
+                    <span class="data-readout" id="readout-psi">80</span>
+                </div>
+                <input type="range" id="slider-psi" min="50" max="120" value="80" step="1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>pH Adjustment</span>
+                    <span class="data-readout" id="readout-ph">7.8</span>
+                </div>
+                <input type="range" id="slider-ph" min="6.5" max="9.5" value="7.8" step="0.1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Calcium Hardness (mg/L)</span>
+                    <span class="data-readout" id="readout-ca">150</span>
+                </div>
+                <input type="range" id="slider-ca" min="50" max="400" value="150" step="5">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Alkalinity (mg/L)</span>
+                    <span class="data-readout" id="readout-alk">80</span>
+                </div>
+                <input type="range" id="slider-alk" min="20" max="250" value="80" step="5">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>TDS (mg/L)</span>
+                    <span class="data-readout" id="readout-tds">300</span>
+                </div>
+                <input type="range" id="slider-tds" min="50" max="1000" value="300" step="10">
+            </div>
+
+            <div class="scada-grid">
+                <div class="scada-card">
+                    <label>LSI Index</label>
+                    <div class="value" id="val-lsi">0.12</div>
+                </div>
+                <div class="scada-card">
+                    <label>Pipe Condition</label>
+                    <div class="value" id="val-condition">Protected</div>
+                </div>
+                <div class="scada-card">
+                    <label>Active Pumps</label>
+                    <div class="value" id="val-pumps">4 / 5</div>
+                </div>
+                <div class="scada-card">
+                    <label>Storage Level</label>
+                    <div class="value" id="val-tank">82%</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="visualization">
+            <div id="alarm">! CRITICAL: LOW SYSTEM PRESSURE — BWA REQUIRED</div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="analogy">
+            <b>Analogy:</b> LSI is like a seesaw. Corrosive forces on one side, scaling on the other. Distribution is like a heart — if the pressure drops too low, the city's veins (pipes) get contaminated.
+        </div>
+        <div class="actions">
+            <a href="https://en.wikipedia.org/wiki/Langelier_saturation_index" target="_blank" class="btn">Learn More</a>
+            <button class="btn" onclick="location.reload()">Reset SCADA</button>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script>
+        // --- HYDRAULICS & PHYSICS ---
+        const HYDRAULICS = {
+            TOTAL_PLANT_MGD: 100,
+            PUMP_CAPACITY: 25, // MGD each
+            
+            calculateLSI(ph, ca, alk, temp, tds) {
+                // Full LSI Formula: LSI = pH - pHs
+                // pHs = (9.3 + A + B) - (C + D)
+                // A = (Log10(TDS) - 1) / 10
+                // B = -13.12 * Log10(Temp+273) + 34.55
+                // C = Log10(Ca) - 0.4
+                // D = Log10(Alk)
+                
+                const A = (Math.log10(tds) - 1) / 10;
+                const B = -13.12 * Math.log10(temp + 273) + 34.55;
+                const C = Math.log10(ca) - 0.4;
+                const D = Math.log10(alk);
+                
+                const pHs = (9.3 + A + B) - (C + D);
+                return ph - pHs;
+            }
+        };
+
+        let state = {
+            demand: 85, psi: 80, ph: 7.8, ca: 150, alk: 80, tds: 300,
+            lsi: 0.12, pumps: 4, tank: 82, temp: 15
+        };
+
+        // --- P5.JS VISUALIZATION ---
+        new p5((p) => {
+            p.setup = () => {
+                const canvas = p.createCanvas(
+                    p.select('#visualization').width,
+                    p.select('#visualization').height
+                );
+                canvas.parent('visualization');
+            };
+
+            p.draw = () => {
+                p.background(10, 14, 23);
+                
+                // Update Physics
+                state.lsi = HYDRAULICS.calculateLSI(state.ph, state.ca, state.alk, state.temp, state.tds);
+                state.pumps = Math.ceil(state.demand / HYDRAULICS.PUMP_CAPACITY);
+                state.tank = 50 + (state.pumps * HYDRAULICS.PUMP_CAPACITY - state.demand) * 2;
+                state.tank = p.constrain(state.tank, 0, 100);
+
+                updateUI();
+                drawPumpStation();
+                drawCityGrid();
+                drawTank();
+                checkAlarms();
+            };
+
+            function drawPumpStation() {
+                const x0 = 100, y0 = p.height * 0.7;
+                p.fill(60); p.noStroke();
+                p.rect(x0-20, y0, 200, 100); // Building
+                
+                // Pumps
+                for(let i=0; i<5; i++) {
+                    p.fill(i < state.pumps ? p.color(0, 255, 136) : p.color(100));
+                    p.ellipse(x0 + i*40, y0 + 50, 25, 25);
+                    if(i < state.pumps) {
+                        p.stroke(0, 255, 136, 150);
+                        p.noFill();
+                        p.arc(x0 + i*40, y0 + 50, 35, 35, p.frameCount*0.1, p.frameCount*0.1 + p.PI);
+                    }
+                }
+            }
+
+            function drawCityGrid() {
+                const x0 = 400, y0 = p.height * 0.2, w = 400, h = 400;
+                p.stroke(40); p.noFill();
+                for(let i=0; i<=5; i++) {
+                    p.line(x0 + i*(w/5), y0, x0 + i*(w/5), y0 + h);
+                    p.line(x0, y0 + i*(h/5), x0 + w, y0 + i*(h/5));
+                }
+
+                // Pressure Lights
+                p.noStroke();
+                for(let i=0; i<6; i++) {
+                    for(let j=0; j<6; j++) {
+                        let press = state.psi - (i+j) * 2;
+                        let col = press < 40 ? p.color(255, 50, 50) : (press > 100 ? p.color(150, 0, 255) : p.color(0, 255, 136));
+                        col.setAlpha(100 + p.sin(p.frameCount * 0.05 + i) * 50);
+                        p.fill(col);
+                        p.ellipse(x0 + i*(w/5), y0 + j*(h/5), 8);
+                    }
+                }
+            }
+
+            function drawTank() {
+                const tx = 300, ty = 100, tw = 60, th = 80;
+                p.stroke(100); p.fill(40);
+                p.rect(tx, ty, tw, th); // Primary tank
+                p.fill(0, 150, 255, 180);
+                const waterH = (state.tank / 100) * th;
+                p.rect(tx, ty + th - waterH, tw, waterH);
+                p.fill(200); p.textSize(10);
+                p.text("STORAGE", tx, ty - 10);
+            }
+
+            function updateUI() {
+                p.select('#val-lsi').html(`${state.lsi.toFixed(2)}`);
+                p.select('#val-pumps').html(`${state.pumps} / 5`);
+                p.select('#val-tank').html(`${Math.round(state.tank)}%`);
+                
+                let cond = "Balanced";
+                if(state.lsi < -0.3) { cond = "Corrosive"; p.select('#val-lsi').addClass('fail').removeClass('warn'); }
+                else if(state.lsi > 0.3) { cond = "Scaling"; p.select('#val-lsi').addClass('warn').removeClass('fail'); }
+                else { p.select('#val-lsi').removeClass('fail').removeClass('warn'); }
+                p.select('#val-condition').html(cond);
+            }
+
+            function checkAlarms() {
+                const alarm = p.select('#alarm');
+                if (state.psi < 40) {
+                    alarm.html("! CRITICAL: LOW SYSTEM PRESSURE — BWA REQUIRED");
+                    alarm.style('display', 'block');
+                } else if(state.demand > 100) {
+                    alarm.html("! WARNING: PEAK DEMAND - SYSTEM STRESS");
+                    alarm.style('display', 'block');
+                } else {
+                    alarm.style('display', 'none');
+                }
+            }
+        });
+
+        // --- DOM EVENT LISTENERS ---
+        document.getElementById('slider-demand').addEventListener('input', (e) => {
+            state.demand = parseInt(e.target.value);
+            document.getElementById('readout-demand').innerText = state.demand;
+        });
+        document.getElementById('slider-psi').addEventListener('input', (e) => {
+            state.psi = parseInt(e.target.value);
+            document.getElementById('readout-psi').innerText = state.psi;
+        });
+        document.getElementById('slider-ph').addEventListener('input', (e) => {
+            state.ph = parseFloat(e.target.value);
+            document.getElementById('readout-ph').innerText = state.ph.toFixed(1);
+        });
+        document.getElementById('slider-ca').addEventListener('input', (e) => {
+            state.ca = parseInt(e.target.value);
+            document.getElementById('readout-ca').innerText = state.ca;
+        });
+        document.getElementById('slider-alk').addEventListener('input', (e) => {
+            state.alk = parseInt(e.target.value);
+            document.getElementById('readout-alk').innerText = state.alk;
+        });
+        document.getElementById('slider-tds').addEventListener('input', (e) => {
+            state.tds = parseInt(e.target.value);
+            document.getElementById('readout-tds').innerText = state.tds;
+        });
+    </script>
+</body>
+</html>

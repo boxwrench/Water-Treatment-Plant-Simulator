@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Treatment Classroom — Module 4: Disinfection & CT Calculation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #1a1a2e;
+            color: #e8e8e8;
+            overflow-x: hidden;
+        }
+        .header {
+            background-color: #16213e;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #00ff88;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        .header p {
+            color: #888888;
+            font-size: 14px;
+        }
+        .main-container {
+            display: flex;
+            height: calc(100vh - 140px);
+        }
+        .left-panel {
+            width: 40%;
+            background-color: #16213e;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid #00ff88;
+        }
+        .right-panel {
+            width: 60%;
+            background-color: #1a1a2e;
+            position: relative;
+        }
+        .control-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #1a1a2e;
+            border-radius: 8px;
+        }
+        .control-section h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        .slider-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #00ff88;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #0f3460;
+            outline: none;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        .ct-display {
+            background-color: #0f3460;
+            border: 3px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .ct-display.violation {
+            border-color: #ff4444;
+            background-color: rgba(255, 68, 68, 0.1);
+        }
+        .ct-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 20px;
+            margin: 5px 0;
+        }
+        .ct-label {
+            color: #888888;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .compliance-status {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .compliance-status.pass {
+            color: #00ff88;
+        }
+        .compliance-status.fail {
+            color: #ff4444;
+        }
+        .metric-display {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #0f3460;
+            border-radius: 5px;
+        }
+        .metric-label {
+            color: #888888;
+        }
+        .metric-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #e8e8e8;
+            font-weight: bold;
+        }
+        .status-indicator {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 8px 0;
+            font-size: 13px;
+            border-left: 4px solid;
+        }
+        .status-good {
+            background-color: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+        .status-warning {
+            background-color: rgba(255, 170, 0, 0.1);
+            border-color: #ffaa00;
+        }
+        .status-danger {
+            background-color: rgba(255, 68, 68, 0.1);
+            border-color: #ff4444;
+        }
+        .reset-button {
+            width: 100%;
+            padding: 15px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .reset-button:hover {
+            background-color: #cc0000;
+        }
+        .footer {
+            background-color: #16213e;
+            padding: 15px 20px;
+            border-top: 2px solid #00ff88;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .analogy-box {
+            flex: 1;
+            padding: 10px;
+            background-color: rgba(0, 255, 136, 0.1);
+            border-left: 4px solid #00ff88;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .learn-more {
+            margin-left: 20px;
+            padding: 10px 20px;
+            background-color: #00ff88;
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .learn-more:hover {
+            background-color: #00cc6f;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #00ff88;
+            margin-left: 5px;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 280px;
+            background-color: #16213e;
+            color: #e8e8e8;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid #00ff88;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        #visualization {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MODULE 4: DISINFECTION & CT CALCULATION</h1>
+        <p>Understanding CT Requirements, Breakpoint Chlorination, and Regulatory Compliance</p>
+    </div>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="control-section">
+                <h3>Disinfection Chemistry</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Chlorine Dose (mg/L) <span class="tooltip">?<span class="tooltiptext">How much disinfectant you add. More isn't always better — too much makes harmful byproducts (DBPs).</span></span></span>
+                        <span class="slider-value" id="doseValue">2.0</span>
+                    </div>
+                    <input type="range" id="dose" min="0" max="10" value="2.0" step="0.1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>pH <span class="tooltip">?<span class="tooltiptext">Higher pH = less HOCl (the killer form). pH 8.5 water needs way more CT than pH 7. Chemistry matters!</span></span></span>
+                        <span class="slider-value" id="phValue">7.5</span>
+                    </div>
+                    <input type="range" id="ph" min="6.5" max="9.0" value="7.5" step="0.1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Ammonia (mg/L as N) <span class="tooltip">?<span class="tooltiptext">Ammonia in raw water. Chlorine reacts with it first (breakpoint). You don't get free chlorine until ammonia is satisfied.</span></span></span>
+                        <span class="slider-value" id="ammoniaValue">0.5</span>
+                    </div>
+                    <input type="range" id="ammonia" min="0" max="2" value="0.5" step="0.1">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Contact Conditions</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Contact Time (min) <span class="tooltip">?<span class="tooltiptext">How long water sits with chlorine before leaving the clearwell. Longer = more kill, but limited by tank size.</span></span></span>
+                        <span class="slider-value" id="timeValue">30</span>
+                    </div>
+                    <input type="range" id="contactTime" min="5" max="120" value="30" step="1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Temperature (°C) <span class="tooltip">?<span class="tooltiptext">Cold water makes chlorine work SLOWER. Required CT triples in winter. This is where violations happen.</span></span></span>
+                        <span class="slider-value" id="tempValue">15</span>
+                    </div>
+                    <input type="range" id="temperature" min="0.5" max="25" value="15" step="0.5">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Baffling Factor <span class="tooltip">?<span class="tooltiptext">How well your clearwell prevents short-circuiting. 0.1 = terrible (raceway). 0.7+ = good baffles. Affects real contact time.</span></span></span>
+                        <span class="slider-value" id="bafflingValue">0.5</span>
+                    </div>
+                    <input type="range" id="baffling" min="0.1" max="1.0" value="0.5" step="0.05">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Regulatory Compliance</h3>
+                <div class="ct-display" id="ctDisplay">
+                    <div class="ct-label">CT Achieved</div>
+                    <div class="ct-value" id="ctAchieved">30 mg·min/L</div>
+                    <div class="ct-label">CT Required (3-log Giardia)</div>
+                    <div class="ct-value" id="ctRequired">52 mg·min/L</div>
+                    <div class="compliance-status fail" id="complianceStatus">❌ VIOLATION</div>
+                </div>
+                <div class="metric-display">
+                    <span class="metric-label">Log Inactivation:</span>
+                    <span class="metric-value" id="logValue">1.7 (Target: 3.0)</span>
+                </div>
+                <div class="metric-display">
+                    <span class="metric-label">Chlorine Residual Type:</span>
+                    <span class="metric-value" id="residualType">Combined (Mono)</span>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Status</h3>
+                <div id="statusMessage" class="status-indicator status-warning">
+                    ⚠ CT insufficient for compliance
+                </div>
+            </div>
+
+            <button class="reset-button" onclick="resetSimulation()">RESET SIMULATION</button>
+        </div>
+
+        <div class="right-panel">
+            <div id="visualization"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="analogy-box">
+            💡 <strong>Analogy:</strong> Chlorine is a bouncer checking IDs at a club to keep out troublemakers (pathogens). In warm water, the bouncer works fast. In cold water, he's sluggish and needs more time. High pH is like dim lighting — harder to spot the bad guys. And ammonia? That's a crowd demanding attention BEFORE he can get to the real troublemakers. You have to get past the ammonia (breakpoint) before you have a bouncer actually guarding the door.
+        </div>
+        <a href="https://www.epa.gov/dwreginfo/surface-water-treatment-rules" target="_blank" class="learn-more">📚 Learn More</a>
+    </div>
+
+    <script>
+// ═══════════════════════════════════════════════════════════
+// MODULE: DISINFECTION & CT CALCULATION
+// DOMAIN: Disinfection
+// VERSION: 1.0
+// ═══════════════════════════════════════════════════════════
+
+// --- CONFIGURATION ---
+const CONFIG = {
+    canvasWidth: window.innerWidth * 0.6,
+    canvasHeight: window.innerHeight - 140,
+};
+
+// --- STATE ---
+let state = {
+    dose: 2.0,
+    pH: 7.5,
+    ammonia: 0.5,
+    contactTime: 30,
+    temperature: 15,
+    baffling: 0.5,
+};
+
+// --- PHYSICS ENGINE ---
+function calculateRequiredCT(temp, pH) {
+    // EPA regression for 3-log Giardia inactivation
+    // CT_required = 0.933 × 3 × (1.038^(20-T)) × (0.765 × pH - 2.95)
+    const logInactivation = 3.0;
+    const tempFactor = Math.pow(1.038, (20 - temp));
+    const pHFactor = 0.765 * pH - 2.95;
+    return 0.933 * logInactivation * tempFactor * pHFactor;
+}
+
+function calculateBreakpointDose(ammonia) {
+    // Breakpoint occurs at ~7.6:1 mass ratio (Cl₂:N)
+    return 7.6 * ammonia;
+}
+
+function calculateResidual(dose, ammonia) {
+    // Simplified breakpoint curve model
+    const breakpoint = calculateBreakpointDose(ammonia);
+    const ratio = dose / (ammonia + 0.01); // Avoid division by zero
+
+    if (dose < breakpoint * 0.5) {
+        // Zone 1: Monochloramine formation
+        return { type: 'mono', value: dose * 0.6 };
+    } else if (dose < breakpoint) {
+        // Zone 2: Destruction zone (the dip)
+        const peak = breakpoint * 0.5 * 0.6;
+        const reduction = (dose - breakpoint * 0.5) / (breakpoint * 0.5);
+        return { type: 'combined', value: peak * (1 - reduction * 0.7) };
+    } else {
+        // Zone 3: Free chlorine
+        return { type: 'free', value: dose - breakpoint };
+    }
+}
+
+function calculateCTAchieved(residual, contactTime, baffling) {
+    // CT = C × T₁₀
+    // T₁₀ = contact_time × baffling_factor
+    const T10 = contactTime * baffling;
+
+    // Only free chlorine counts for CT
+    const effectiveResidual = residual.type === 'free' ? residual.value : residual.value * 0.1;
+
+    return effectiveResidual * T10;
+}
+
+function calculateLogInactivation(ctAchieved, ctRequired) {
+    // Log inactivation = 3 × (CT_achieved / CT_required)
+    const logInact = 3.0 * (ctAchieved / ctRequired);
+    return Math.min(3.0, logInact); // Cap at 3.0
+}
+
+function calculateStatus() {
+    const residual = calculateResidual(state.dose, state.ammonia);
+    const ctRequired = calculateRequiredCT(state.temperature, state.pH);
+    const ctAchieved = calculateCTAchieved(residual, state.contactTime, state.baffling);
+    const breakpoint = calculateBreakpointDose(state.ammonia);
+
+    if (ctAchieved < ctRequired) {
+        return { type: 'danger', message: '❌ VIOLATION - Insufficient CT for 3-log Giardia' };
+    }
+    if (state.temperature < 5 && state.pH > 8.0) {
+        return { type: 'warning', message: '⚠ CRITICAL CONDITIONS - Required CT very high' };
+    }
+    if (state.dose < breakpoint && state.ammonia > 0.2) {
+        return { type: 'warning', message: '⚠ Combined chlorine residual - Weak disinfection' };
+    }
+    if (state.baffling < 0.3) {
+        return { type: 'warning', message: '⚠ POOR CONTACT - Severe short-circuiting reduces effective CT' };
+    }
+    if (ctAchieved >= ctRequired && residual.type === 'free') {
+        return { type: 'good', message: '✓ COMPLIANCE - Adequate CT with free chlorine residual' };
+    }
+    return { type: 'good', message: '✓ CT requirement met' };
+}
+
+function updateUI() {
+    document.getElementById('doseValue').textContent = state.dose.toFixed(1);
+    document.getElementById('phValue').textContent = state.pH.toFixed(1);
+    document.getElementById('ammoniaValue').textContent = state.ammonia.toFixed(1);
+    document.getElementById('timeValue').textContent = state.contactTime;
+    document.getElementById('tempValue').textContent = state.temperature.toFixed(1);
+    document.getElementById('bafflingValue').textContent = state.baffling.toFixed(2);
+
+    const residual = calculateResidual(state.dose, state.ammonia);
+    const ctRequired = calculateRequiredCT(state.temperature, state.pH);
+    const ctAchieved = calculateCTAchieved(residual, state.contactTime, state.baffling);
+    const logInactivation = calculateLogInactivation(ctAchieved, ctRequired);
+
+    document.getElementById('ctAchieved').textContent = ctAchieved.toFixed(1) + ' mg·min/L';
+    document.getElementById('ctRequired').textContent = ctRequired.toFixed(1) + ' mg·min/L';
+    document.getElementById('logValue').textContent = logInactivation.toFixed(1) + ' (Target: 3.0)';
+
+    let residualTypeText = '';
+    if (residual.type === 'mono') residualTypeText = 'Combined (Mono)';
+    else if (residual.type === 'combined') residualTypeText = 'Combined (Mixed)';
+    else residualTypeText = 'Free Chlorine';
+    document.getElementById('residualType').textContent = residualTypeText;
+
+    const ctDisplay = document.getElementById('ctDisplay');
+    const complianceStatus = document.getElementById('complianceStatus');
+    if (ctAchieved >= ctRequired) {
+        ctDisplay.className = 'ct-display';
+        complianceStatus.className = 'compliance-status pass';
+        complianceStatus.textContent = '✓ COMPLIANCE';
+    } else {
+        ctDisplay.className = 'ct-display violation';
+        complianceStatus.className = 'compliance-status fail';
+        complianceStatus.textContent = '❌ VIOLATION';
+    }
+
+    const status = calculateStatus();
+    const statusDiv = document.getElementById('statusMessage');
+    statusDiv.textContent = status.message;
+    statusDiv.className = 'status-indicator status-' + status.type;
+}
+
+// --- P5.JS SKETCH ---
+let sketch = function(p) {
+    p.setup = function() {
+        const canvas = p.createCanvas(CONFIG.canvasWidth, CONFIG.canvasHeight);
+        canvas.parent('visualization');
+    };
+
+    p.draw = function() {
+        p.background(26, 26, 46);
+
+        // Breakpoint Curve
+        drawBreakpointCurve(p);
+
+        // Chlorine Species Breakdown
+        drawSpeciesBreakdown(p);
+
+        // Clearwell Diagram
+        drawClearwell(p);
+    };
+
+    function drawBreakpointCurve(p) {
+        const graphX = 50;
+        const graphY = 50;
+        const graphWidth = CONFIG.canvasWidth - 100;
+        const graphHeight = 200;
+
+        p.fill(232, 232, 232);
+        p.noStroke();
+        p.textSize(14);
+        p.textAlign(p.LEFT);
+        p.text('BREAKPOINT CHLORINATION CURVE', graphX, graphY - 10);
+
+        // Axes
+        p.stroke(100, 100, 100);
+        p.strokeWeight(2);
+        p.line(graphX, graphY + graphHeight, graphX + graphWidth, graphY + graphHeight); // X axis
+        p.line(graphX, graphY, graphX, graphY + graphHeight); // Y axis
+
+        // Labels
+        p.fill(232, 232, 232);
+        p.noStroke();
+        p.textSize(11);
+        p.textAlign(p.CENTER);
+        p.text('Chlorine Dose (mg/L) →', graphX + graphWidth/2, graphY + graphHeight + 30);
+        p.push();
+        p.translate(graphX - 35, graphY + graphHeight/2);
+        p.rotate(-p.HALF_PI);
+        p.text('Chlorine Residual (mg/L)', 0, 0);
+        p.pop();
+
+        // Calculate breakpoint
+        const breakpoint = calculateBreakpointDose(state.ammonia);
+
+        // Draw curve
+        p.stroke(0, 255, 136);
+        p.strokeWeight(3);
+        p.noFill();
+        p.beginShape();
+        for (let dose = 0; dose <= 10; dose += 0.1) {
+            const residual = calculateResidual(dose, state.ammonia);
+            const x = p.map(dose, 0, 10, graphX, graphX + graphWidth);
+            const y = p.map(residual.value, 0, 5, graphY + graphHeight, graphY);
+            p.vertex(x, y);
+        }
+        p.endShape();
+
+        // Mark breakpoint
+        const bpX = p.map(breakpoint, 0, 10, graphX, graphX + graphWidth);
+        p.stroke(255, 200, 0);
+        p.strokeWeight(2);
+        p.line(bpX, graphY, bpX, graphY + graphHeight);
+        p.fill(255, 200, 0);
+        p.noStroke();
+        p.textSize(10);
+        p.textAlign(p.CENTER);
+        p.text('Breakpoint', bpX, graphY - 5);
+        p.text(breakpoint.toFixed(1) + ' mg/L', bpX, graphY + graphHeight + 15);
+
+        // Mark current dose
+        const currentX = p.map(state.dose, 0, 10, graphX, graphX + graphWidth);
+        const currentRes = calculateResidual(state.dose, state.ammonia);
+        const currentY = p.map(currentRes.value, 0, 5, graphY + graphHeight, graphY);
+        p.fill(255, 100, 100);
+        p.noStroke();
+        p.circle(currentX, currentY, 12);
+        p.fill(232, 232, 232);
+        p.textSize(10);
+        p.textAlign(p.CENTER);
+        p.text('Current: ' + state.dose.toFixed(1) + ' mg/L', currentX, currentY - 15);
+
+        // Zone labels
+        p.fill(255, 200, 100, 150);
+        p.noStroke();
+        p.textSize(10);
+        p.textAlign(p.CENTER);
+        if (state.dose < breakpoint) {
+            p.text('Zone: Combined Chlorine (before breakpoint)', graphX + graphWidth/2, graphY + graphHeight + 50);
+        } else {
+            p.text('Zone: Free Chlorine (past breakpoint)', graphX + graphWidth/2, graphY + graphHeight + 50);
+        }
+    }
+
+    function drawSpeciesBreakdown(p) {
+        const boxX = 50;
+        const boxY = 300;
+        const boxWidth = CONFIG.canvasWidth - 100;
+        const boxHeight = 100;
+
+        p.fill(232, 232, 232);
+        p.noStroke();
+        p.textSize(14);
+        p.textAlign(p.LEFT);
+        p.text('CHLORINE SPECIES BREAKDOWN', boxX, boxY - 10);
+
+        const residual = calculateResidual(state.dose, state.ammonia);
+
+        // Calculate species percentages (simplified)
+        let monoPct, diPct, freePct;
+        if (residual.type === 'mono') {
+            monoPct = 80;
+            diPct = 20;
+            freePct = 0;
+        } else if (residual.type === 'combined') {
+            monoPct = 50;
+            diPct = 40;
+            freePct = 10;
+        } else {
+            monoPct = 5;
+            diPct = 5;
+            freePct = 90;
+        }
+
+        // Draw bars
+        const barHeight = 25;
+        const barY = boxY + 20;
+
+        // Monochloramine
+        p.fill(255, 170, 0);
+        p.rect(boxX, barY, boxWidth * (monoPct / 100), barHeight);
+        p.fill(232, 232, 232);
+        p.textSize(11);
+        p.textAlign(p.LEFT);
+        p.text('Monochloramine: ' + monoPct + '%', boxX + 10, barY + 17);
+
+        // Dichloramine
+        p.fill(255, 120, 0);
+        p.rect(boxX, barY + 35, boxWidth * (diPct / 100), barHeight);
+        p.fill(232, 232, 232);
+        p.text('Dichloramine: ' + diPct + '%', boxX + 10, barY + 52);
+
+        // Free chlorine
+        p.fill(0, 255, 136);
+        p.rect(boxX, barY + 70, boxWidth * (freePct / 100), barHeight);
+        p.fill(232, 232, 232);
+        p.text('Free Chlorine: ' + freePct + '%', boxX + 10, barY + 87);
+
+        // Note
+        p.fill(136, 136, 136);
+        p.textSize(10);
+        p.text('Note: Free chlorine is the effective disinfectant for CT calculation', boxX, boxY + boxHeight + 15);
+    }
+
+    function drawClearwell(p) {
+        const cwX = 50;
+        const cwY = 450;
+        const cwWidth = CONFIG.canvasWidth - 100;
+        const cwHeight = 150;
+
+        p.fill(232, 232, 232);
+        p.noStroke();
+        p.textSize(14);
+        p.textAlign(p.LEFT);
+        p.text('CLEARWELL DIAGRAM — Baffling Factor: ' + state.baffling.toFixed(2), cwX, cwY - 10);
+
+        // Tank outline
+        p.stroke(0, 255, 136);
+        p.strokeWeight(2);
+        p.noFill();
+        p.rect(cwX, cwY, cwWidth, cwHeight);
+
+        // Inlet
+        p.fill(100, 150, 255);
+        p.noStroke();
+        p.text('Inlet →', cwX - 40, cwY + 20);
+        p.fill(100, 150, 255, 100);
+        p.rect(cwX, cwY, 30, 30);
+
+        // Outlet
+        p.fill(232, 232, 232);
+        p.text('← Outlet', cwX + cwWidth + 5, cwY + cwHeight - 10);
+        p.fill(100, 150, 255, 100);
+        p.rect(cwX + cwWidth - 30, cwY + cwHeight - 30, 30, 30);
+
+        // Flow paths based on baffling
+        p.stroke(100, 150, 255, 150);
+        p.strokeWeight(2);
+        p.noFill();
+
+        if (state.baffling < 0.3) {
+            // Poor baffling - direct short circuit
+            p.line(cwX + 30, cwY + 15, cwX + cwWidth - 30, cwY + cwHeight - 15);
+            p.fill(255, 68, 68);
+            p.noStroke();
+            p.textSize(11);
+            p.textAlign(p.CENTER);
+            p.text('SHORT-CIRCUITING', cwX + cwWidth/2, cwY + cwHeight/2);
+        } else if (state.baffling < 0.7) {
+            // Average baffling - some circulation
+            p.bezier(cwX + 30, cwY + 15,
+                     cwX + cwWidth/2, cwY + 50,
+                     cwX + cwWidth/2, cwY + cwHeight - 50,
+                     cwX + cwWidth - 30, cwY + cwHeight - 15);
+        } else {
+            // Good baffling - serpentine flow
+            p.bezier(cwX + 30, cwY + 15,
+                     cwX + cwWidth * 0.3, cwY + 30,
+                     cwX + cwWidth * 0.3, cwY + cwHeight - 30,
+                     cwX + cwWidth * 0.6, cwY + cwHeight - 15);
+            p.bezier(cwX + cwWidth * 0.6, cwY + cwHeight - 15,
+                     cwX + cwWidth * 0.8, cwY + cwHeight - 30,
+                     cwX + cwWidth * 0.8, cwY + 40,
+                     cwX + cwWidth - 30, cwY + cwHeight - 15);
+            p.fill(0, 255, 136);
+            p.noStroke();
+            p.textSize(11);
+            p.textAlign(p.CENTER);
+            p.text('GOOD BAFFLING', cwX + cwWidth/2, cwY + cwHeight/2);
+        }
+    }
+};
+
+new p5(sketch);
+
+// --- UI HANDLERS ---
+document.getElementById('dose').addEventListener('input', (e) => {
+    state.dose = parseFloat(e.target.value);
+    updateUI();
+});
+
+document.getElementById('ph').addEventListener('input', (e) => {
+    state.pH = parseFloat(e.target.value);
+    updateUI();
+});
+
+document.getElementById('ammonia').addEventListener('input', (e) => {
+    state.ammonia = parseFloat(e.target.value);
+    updateUI();
+});
+
+document.getElementById('contactTime').addEventListener('input', (e) => {
+    state.contactTime = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('temperature').addEventListener('input', (e) => {
+    state.temperature = parseFloat(e.target.value);
+    updateUI();
+});
+
+document.getElementById('baffling').addEventListener('input', (e) => {
+    state.baffling = parseFloat(e.target.value);
+    updateUI();
+});
+
+function resetSimulation() {
+    state.dose = 2.0;
+    state.pH = 7.5;
+    state.ammonia = 0.5;
+    state.contactTime = 30;
+    state.temperature = 15;
+    state.baffling = 0.5;
+
+    document.getElementById('dose').value = 2.0;
+    document.getElementById('ph').value = 7.5;
+    document.getElementById('ammonia').value = 0.5;
+    document.getElementById('contactTime').value = 30;
+    document.getElementById('temperature').value = 15;
+    document.getElementById('baffling').value = 0.5;
+
+    updateUI();
+}
+
+// Initial UI update
+updateUI();
+    </script>
+</body>
+</html>

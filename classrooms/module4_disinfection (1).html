@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Water Treatment Classroom — Module 4: Disinfection & CT</title>
+<style>
+    body { margin:0; font-family:'Segoe UI', system-ui, sans-serif; background:#1a1a2e; color:#e8e8e8; }
+    #container { display:flex; height:100vh; }
+    #left { width:40%; padding:10px; background:#16213e; overflow-y:auto; box-sizing:border-box; }
+    #right { width:60%; background:#16213e; position:relative; }
+    h1 { margin:0; font-size:24px; }
+    .slider-group { margin-bottom:10px; }
+    label { display:block; font-size:14px; margin-bottom:2px; }
+    input[type=range] { width:100%; }
+    select { width:100%; }
+    .readout { font-family:'Consolas', monospace; margin-bottom:5px; }
+    #analogy { background:#16213e; padding:10px; font-size:12px; border-top:1px solid #888888; }
+    .status { margin-top:5px; font-size:12px; }
+</style>
+</head>
+<body>
+<div id="container">
+    <div id="left">
+        <h1>Disinfection & CT</h1>
+        <div class="slider-group">
+            <label>Chlorine Dose (mg/L): <span id="dose4Val">2</span></label>
+            <input type="range" id="dose4" min="0" max="10" value="2" step="0.1" title="Chlorine dosage applied. Higher dose yields more residual after demand.">
+        </div>
+        <div class="slider-group">
+            <label>Contact Time (min): <span id="timeVal">30</span></label>
+            <input type="range" id="time" min="5" max="120" value="30" step="1" title="Hydraulic detention time before water leaves the clearwell.">
+        </div>
+        <div class="slider-group">
+            <label>Temperature (°C): <span id="temp4Val">15</span></label>
+            <input type="range" id="temp4" min="0.5" max="25" value="15" step="0.5" title="Water temperature. Cold water slows disinfection reactions.">
+        </div>
+        <div class="slider-group">
+            <label>pH: <span id="pHVal">7.5</span></label>
+            <input type="range" id="pH" min="6.5" max="9.0" value="7.5" step="0.1" title="Higher pH reduces the active hypochlorous acid fraction, increasing CT requirement.">
+        </div>
+        <div class="slider-group">
+            <label>Ammonia (mg/L as N): <span id="ammVal">0.5</span></label>
+            <input type="range" id="amm" min="0" max="2" value="0.5" step="0.1" title="Ammonia forms combined chlorine until the breakpoint is reached.">
+        </div>
+        <div class="slider-group">
+            <label>Baffling Factor: <span id="baffVal">0.5</span></label>
+            <input type="range" id="baff" min="0.1" max="1.0" value="0.5" step="0.1" title="Baffling factor: 0.1 = unbaffled, 0.3 = poor, 0.5 = average, 0.7 = superior, 1 = perfect plug flow.">
+        </div>
+        <div class="readout" id="ctAchieved">CT Achieved: 0</div>
+        <div class="readout" id="ctRequired">CT Required: 0</div>
+        <div class="status" id="status4"></div>
+        <div id="analogy">
+            <strong>Analogy:</strong> Chlorine is a bouncer checking IDs. In warm water, he works fast. In cold water, he’s sluggish and needs more time. High pH is like dim lighting – harder to spot the bad guys. Ammonia is a crowd of people distracting him before he can even reach the pathogens. Baffles are the walls that force everyone past the bouncer instead of sneaking around.
+            <br><a href="https://en.wikipedia.org/wiki/Chlorine_disinfection#CT" target="_blank" style="color:#00ff88; text-decoration:none;">📚 Learn More</a>
+        </div>
+    </div>
+    <div id="right"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<script>
+let disSim;
+let cfg4 = { dose:2, time:30, temp:15, pH:7.5, amm:0.5, baff:0.5 };
+
+function setup() {
+    disSim = new p5(p => {
+        p.setup = function() {
+            let cnv = p.createCanvas(document.getElementById('right').clientWidth, document.getElementById('right').clientHeight);
+            cnv.parent('right');
+        };
+        p.windowResized = function() {
+            p.resizeCanvas(document.getElementById('right').clientWidth, document.getElementById('right').clientHeight);
+        };
+        p.draw = function() {
+            p.background('#1a1a2e');
+            drawBreakpoint(p);
+            drawClearwell(p);
+        };
+    });
+}
+
+function updateCT() {
+    // residual after ammonia demand (simplified): subtract chlorine consumed by ammonia (7.6 mg Cl2 per mg N for breakpoint)
+    let ratio = cfg4.dose / (cfg4.amm === 0 ? 0.0001 : cfg4.amm);
+    let residual;
+    if (ratio < 5) {
+        residual = cfg4.dose * 0.5; // mostly combined residual
+    } else if (ratio < 7.6) {
+        residual = cfg4.dose * 0.2; // dip
+    } else {
+        residual = cfg4.dose * 0.8; // free residual after breakpoint
+    }
+    // CT achieved
+    let T10 = cfg4.time * cfg4.baff;
+    let ctAch = residual * T10;
+    document.getElementById('ctAchieved').innerText = `CT Achieved: ${ctAch.toFixed(1)} mg·min/L`;
+    // CT required (3-log Giardia) using regression
+    let required = 0.933 * 3 * Math.pow(1.038, (20 - cfg4.temp)) * (0.765 * cfg4.pH - 2.95);
+    document.getElementById('ctRequired').innerText = `CT Required: ${required.toFixed(1)} mg·min/L`;
+    // compliance
+    let status = '';
+    let statusEl = document.getElementById('status4');
+    if (ctAch < required) {
+        status = 'VIOLATION – Insufficient Disinfection';
+        statusEl.style.color = '#ff4444';
+    } else {
+        status = 'Compliant';
+        statusEl.style.color = '#00ff88';
+    }
+    // winter warning
+    if (cfg4.temp < 1) status += ' | Extreme cold increases CT!';
+    statusEl.innerText = status;
+}
+
+function drawBreakpoint(p) {
+    // draw axes
+    p.stroke('#888888');
+    p.line(50, p.height - 40, p.width - 20, p.height - 40); // x-axis
+    p.line(50, p.height - 40, 50, 40); // y-axis
+    // label
+    p.fill('#e8e8e8');
+    p.textSize(12);
+    p.text('Cl2:NH3 Ratio', p.width/2 - 40, p.height - 10);
+    p.push();
+    p.translate(15, p.height/2);
+    p.rotate(-Math.PI/2);
+    p.text('Residual (scaled)', 0, 0);
+    p.pop();
+    // draw breakpoint curve sample
+    p.noFill();
+    p.stroke('#00ff88');
+    p.beginShape();
+    for (let r=0; r<=10; r+=0.1) {
+        let x = 50 + (r/10) * (p.width - 70);
+        let y;
+        if (r < 5) y = p.map(r, 0, 5, p.height-40, p.height-150);
+        else if (r < 7.6) y = p.map(r, 5, 7.6, p.height-150, p.height-100);
+        else y = p.map(r, 7.6, 10, p.height-100, p.height-60);
+        p.vertex(x, y);
+    }
+    p.endShape();
+    // marker for current ratio
+    let ratio = cfg4.dose / (cfg4.amm === 0 ? 0.0001 : cfg4.amm);
+    let x = 50 + (Math.min(ratio,10)/10) * (p.width - 70);
+    let y;
+    if (ratio < 5) y = p.map(ratio, 0, 5, p.height-40, p.height-150);
+    else if (ratio < 7.6) y = p.map(ratio, 5, 7.6, p.height-150, p.height-100);
+    else y = p.map(Math.min(ratio,10), 7.6, 10, p.height-100, p.height-60);
+    p.fill('#ffaa00');
+    p.noStroke();
+    p.ellipse(x, y, 8, 8);
+}
+
+// Draw schematic clearwell with baffles to visualise baffling factor
+function drawClearwell(p) {
+    let cwWidth = p.width * 0.8;
+    let cwHeight = p.height * 0.25;
+    let cwX = p.width * 0.1;
+    let cwY = p.height - cwHeight - 20;
+    // draw tank outline
+    p.noStroke();
+    p.fill('#0e2748');
+    p.rect(cwX, cwY, cwWidth, cwHeight);
+    // water fill
+    p.fill('#003f3f');
+    p.rect(cwX + 2, cwY + 2, cwWidth - 4, cwHeight - 4);
+    // compute number of baffles based on baffling factor (more baffles for higher factor)
+    let nBaffles = Math.max(1, Math.round(cfg4.baff * 5));
+    let gapHeight = cwHeight * 0.6;
+    for (let i = 1; i <= nBaffles; i++) {
+        let x = cwX + (i / (nBaffles + 1)) * cwWidth;
+        p.fill('#16213e');
+        if (i % 2 === 0) {
+            // draw from bottom up leaving gap at top
+            p.rect(x - 2, cwY + cwHeight - gapHeight, 4, gapHeight - 4);
+        } else {
+            // draw from top down leaving gap at bottom
+            p.rect(x - 2, cwY + 2, 4, gapHeight - 4);
+        }
+    }
+    // arrows for flow path
+    p.noStroke();
+    p.fill('#00ff88');
+    let arrowYTop = cwY + 6;
+    let arrowYBot = cwY + cwHeight - 8;
+    let arrowSize = 6;
+    for (let i = 0; i < nBaffles + 1; i++) {
+        let xStart = cwX + (i / (nBaffles + 1)) * cwWidth;
+        let y = (i % 2 === 0) ? arrowYTop : arrowYBot;
+        // draw right pointing arrow
+        p.triangle(xStart + 5, y, xStart + 5 + arrowSize, y - arrowSize/2, xStart + 5 + arrowSize, y + arrowSize/2);
+    }
+}
+
+// event listeners
+['dose4','time','temp4','pH','amm','baff'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+        let val = parseFloat(el.value);
+        if (id === 'dose4') cfg4.dose = val;
+        else if (id === 'time') cfg4.time = val;
+        else if (id === 'temp4') cfg4.temp = val;
+        else if (id === 'pH') cfg4.pH = val;
+        else if (id === 'amm') cfg4.amm = val;
+        else if (id === 'baff') cfg4.baff = val;
+        document.getElementById(id + 'Val').innerText = el.value;
+        updateCT();
+    });
+});
+updateCT();
+</script>
+</body>
+</html>

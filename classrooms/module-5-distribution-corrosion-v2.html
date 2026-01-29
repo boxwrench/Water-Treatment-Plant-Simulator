@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module 5: Distribution & Corrosion Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .panel-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #2a5298;
+            color: #1e3c72;
+        }
+
+        /* Lab Data Entry Form */
+        .lab-form {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .form-group input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            font-family: 'Consolas', 'Monaco', monospace;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+
+        .form-group .unit {
+            font-size: 0.85em;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        /* LSI Display */
+        .lsi-display {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .lsi-value {
+            font-size: 3em;
+            font-weight: bold;
+            font-family: 'Consolas', 'Monaco', monospace;
+            margin: 10px 0;
+        }
+
+        .lsi-value.positive {
+            color: #dc3545;
+        }
+
+        .lsi-value.negative {
+            color: #007bff;
+        }
+
+        .lsi-value.neutral {
+            color: #28a745;
+        }
+
+        .lsi-status {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .lsi-recommendation {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.95em;
+            color: #666;
+        }
+
+        /* Distribution Map */
+        .distribution-map {
+            position: relative;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 400px;
+        }
+
+        .zone {
+            position: absolute;
+            border: 3px solid #2a5298;
+            border-radius: 8px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .zone:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .zone-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            color: #1e3c72;
+        }
+
+        .zone-info {
+            font-size: 0.9em;
+            color: #555;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .zone-alert {
+            margin-top: 8px;
+            padding: 5px 8px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: #856404;
+        }
+
+        .zone-alert.critical {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        #zone1 { top: 50px; left: 50px; width: 180px; }
+        #zone2 { top: 50px; right: 50px; width: 180px; }
+        #zone3 { bottom: 50px; left: 50%; transform: translateX(-50%); width: 180px; }
+
+        .plant-marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: #2a5298;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        /* Complaint Simulator */
+        .complaint-box {
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .complaint-header {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 8px;
+            font-size: 1.05em;
+        }
+
+        .complaint-body {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95em;
+        }
+
+        .btn-primary {
+            background: #2a5298;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e3c72;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .response-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .response-box.show {
+            display: block;
+        }
+
+        /* Seasonal Comparison */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .comparison-table th {
+            background: #2a5298;
+            color: white;
+            font-weight: 600;
+        }
+
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .comparison-table td {
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .season-summer {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .season-winter {
+            color: #007bff;
+            font-weight: 600;
+        }
+
+        /* Nitrification Panel */
+        .nitrification-panel {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .nitro-alert {
+            padding: 15px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nitro-alert.low {
+            background: #d4edda;
+            border: 2px solid #28a745;
+        }
+
+        .nitro-alert.medium {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+        }
+
+        .nitro-alert.high {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+        }
+
+        .nitro-location {
+            font-weight: bold;
+            font-size: 1.05em;
+        }
+
+        .nitro-reading {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 1.1em;
+        }
+
+        /* Full Width Panels */
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scenario Button */
+        .scenario-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 30px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .scenario-btn:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Module 5: Distribution & Corrosion Control</h1>
+        <p>100 MGD Regional Water Treatment Plant | Lab Analysis & System Monitoring</p>
+    </div>
+
+    <div class="container">
+        <!-- Lab Data Entry & LSI Calculator -->
+        <div class="main-grid">
+            <div class="panel">
+                <div class="panel-title">Daily Water Quality Analysis</div>
+                <form class="lab-form" id="labForm">
+                    <div class="form-group">
+                        <label for="temp">Water Temperature</label>
+                        <input type="number" id="temp" value="15" step="0.1" min="0" max="40">
+                        <span class="unit">°C</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="ph">pH</label>
+                        <input type="number" id="ph" value="7.5" step="0.01" min="6" max="9">
+                        <span class="unit">standard units</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="calcium">Calcium Hardness</label>
+                        <input type="number" id="calcium" value="80" step="1" min="0" max="500">
+                        <span class="unit">mg/L as CaCO₃</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="alkalinity">Total Alkalinity</label>
+                        <input type="number" id="alkalinity" value="100" step="1" min="0" max="500">
+                        <span class="unit">mg/L as CaCO₃</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="tds">Total Dissolved Solids</label>
+                        <input type="number" id="tds" value="250" step="1" min="0" max="1000">
+                        <span class="unit">mg/L</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="chlorine">Free Chlorine Residual</label>
+                        <input type="number" id="chlorine" value="2.5" step="0.1" min="0" max="5">
+                        <span class="unit">mg/L</span>
+                    </div>
+                </form>
+
+                <div class="lsi-display">
+                    <div style="font-size: 1.2em; font-weight: 600; color: #555;">Langelier Saturation Index</div>
+                    <div class="lsi-value neutral" id="lsiValue">+0.15</div>
+                    <div class="lsi-status" id="lsiStatus">Slightly Scale-Forming</div>
+                    <div class="lsi-recommendation" id="lsiRecommendation">
+                        LSI is within acceptable range (-0.5 to +0.5). Water chemistry is balanced. Monitor distribution system for mineral deposits.
+                    </div>
+                </div>
+
+                <div class="info-text">
+                    Target range: -0.5 to +0.5 | Negative = Corrosive | Positive = Scale-Forming
+                </div>
+            </div>
+
+            <!-- Distribution System Map -->
+            <div class="panel">
+                <div class="panel-title">Distribution System Monitor</div>
+                <div class="distribution-map">
+                    <div class="plant-marker">WATER<br>PLANT</div>
+
+                    <div class="zone" id="zone1">
+                        <div class="zone-name">Zone 1: Downtown</div>
+                        <div class="zone-info">
+                            Flow: <span id="z1flow">28.5</span> MGD<br>
+                            Residence: <span id="z1residence">8</span> hrs<br>
+                            Cl₂: <span id="z1chlorine">1.8</span> mg/L
+                        </div>
+                        <div class="zone-alert" id="z1alert" style="display: none;">
+                            ⚠️ Chlorine below target
+                        </div>
+                    </div>
+
+                    <div class="zone" id="zone2">
+                        <div class="zone-name">Zone 2: Industrial</div>
+                        <div class="zone-info">
+                            Flow: <span id="z2flow">42.0</span> MGD<br>
+                            Residence: <span id="z2residence">5</span> hrs<br>
+                            Cl₂: <span id="z2chlorine">2.2</span> mg/L
+                        </div>
+                        <div class="zone-alert" id="z2alert" style="display: none;">
+                            ⚠️ Low residence time
+                        </div>
+                    </div>
+
+                    <div class="zone" id="zone3">
+                        <div class="zone-name">Zone 3: Residential</div>
+                        <div class="zone-info">
+                            Flow: <span id="z3flow">29.5</span> MGD<br>
+                            Residence: <span id="z3residence">36</span> hrs<br>
+                            Cl₂: <span id="z3chlorine">0.8</span> mg/L
+                        </div>
+                        <div class="zone-alert critical" id="z3alert">
+                            🚨 High residence time - Nitrification risk
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Complaint Simulator -->
+        <div class="main-grid">
+            <div class="panel">
+                <div class="panel-title">Customer Complaint Response</div>
+
+                <div class="complaint-box" id="complaintBox">
+                    <div class="complaint-header">📞 Customer Call - Ticket #2847</div>
+                    <div class="complaint-body">
+                        <strong>Location:</strong> Zone 3, 1245 Elm Street<br>
+                        <strong>Issue:</strong> "White crusty deposits in my water heater. Replaced the heating element twice this year. Water leaves spots on dishes."<br>
+                        <strong>Time in System:</strong> 36 hours residence time
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="respondComplaint('investigate')">Investigate LSI</button>
+                    <button class="btn btn-warning" onclick="respondComplaint('adjust')">Adjust Chemistry</button>
+                    <button class="btn btn-secondary" onclick="respondComplaint('flush')">Schedule Flushing</button>
+                </div>
+
+                <div class="response-box" id="responseBox">
+                    <strong>Operator Action Logged:</strong><br>
+                    <span id="responseText"></span>
+                </div>
+            </div>
+
+            <!-- Nitrification Monitoring -->
+            <div class="panel">
+                <div class="panel-title">Nitrification Risk Assessment</div>
+
+                <div class="nitrification-panel">
+                    <div class="nitro-alert low">
+                        <div>
+                            <div class="nitro-location">Zone 1 (Downtown)</div>
+                            <div style="font-size: 0.9em; color: #666;">Residence: 8 hrs | Temp: 15°C</div>
+                        </div>
+                        <div class="nitro-reading">
+                            NH₃: <span id="z1ammonia">0.02</span> mg/L<br>
+                            <span style="color: #28a745;">✓ Low Risk</span>
+                        </div>
+                    </div>
+
+                    <div class="nitro-alert low">
+                        <div>
+                            <div class="nitro-location">Zone 2 (Industrial)</div>
+                            <div style="font-size: 0.9em; color: #666;">Residence: 5 hrs | Temp: 15°C</div>
+                        </div>
+                        <div class="nitro-reading">
+                            NH₃: <span id="z2ammonia">0.01</span> mg/L<br>
+                            <span style="color: #28a745;">✓ Low Risk</span>
+                        </div>
+                    </div>
+
+                    <div class="nitro-alert high" id="nitroZ3">
+                        <div>
+                            <div class="nitro-location">Zone 3 (Residential)</div>
+                            <div style="font-size: 0.9em; color: #666;">Residence: 36 hrs | Temp: <span id="z3temp">15</span>°C</div>
+                        </div>
+                        <div class="nitro-reading">
+                            NH₃: <span id="z3ammonia">0.18</span> mg/L<br>
+                            <span style="color: #dc3545;">⚠️ High Risk</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-text">
+                    Nitrification occurs when residence time >24 hrs and temperature >15°C. Chloramines convert to ammonia, reducing disinfectant residual.
+                </div>
+            </div>
+        </div>
+
+        <!-- Seasonal Comparison -->
+        <div class="main-grid">
+            <div class="panel full-width">
+                <div class="panel-title">Seasonal Chemistry Comparison</div>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Summer Conditions</th>
+                            <th>Winter Conditions</th>
+                            <th>Challenge</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Water Temperature</strong></td>
+                            <td class="season-summer">24°C</td>
+                            <td class="season-winter">4°C</td>
+                            <td>Summer: Faster biological growth, higher chlorine demand</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Chlorine Decay Rate</strong></td>
+                            <td class="season-summer">0.15 mg/L/day</td>
+                            <td class="season-winter">0.05 mg/L/day</td>
+                            <td>Summer: Must increase dosage to maintain residual</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Required CT (3-log Giardia)</strong></td>
+                            <td class="season-summer">58 mg·min/L</td>
+                            <td class="season-winter">177 mg·min/L</td>
+                            <td>Winter: Cold water requires 3× more contact time</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Nitrification Risk</strong></td>
+                            <td class="season-summer">HIGH</td>
+                            <td class="season-winter">LOW</td>
+                            <td>Summer: Dead ends and long residence times at risk</td>
+                        </tr>
+                        <tr>
+                            <td><strong>pH Stability</strong></td>
+                            <td class="season-summer">7.3 (CO₂ outgassing)</td>
+                            <td class="season-winter">7.8 (CO₂ solubility)</td>
+                            <td>Summer: Lower pH increases corrosivity (negative LSI)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Typical Flow Demand</strong></td>
+                            <td class="season-summer">115 MGD (peak)</td>
+                            <td class="season-winter">85 MGD</td>
+                            <td>Summer: Irrigation demand increases by 35%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Distribution Residence Time</strong></td>
+                            <td class="season-summer">12 hrs (high flow)</td>
+                            <td class="season-winter">18 hrs (low flow)</td>
+                            <td>Winter: Longer residence = more chlorine decay in system</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="info-text" style="margin-top: 15px;">
+                    Seasonal adjustments critical for maintaining water quality throughout distribution system. Operators must anticipate temperature-dependent chemistry changes.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="scenario-btn" onclick="triggerSummerScenario()">🌡️ SUMMER SCENARIO</button>
+
+    <script>
+        // State Management
+        const state = {
+            temp: 15,
+            ph: 7.5,
+            calcium: 80,
+            alkalinity: 100,
+            tds: 250,
+            chlorine: 2.5,
+            season: 'normal'
+        };
+
+        // LSI Calculation
+        function calculateLSI() {
+            const temp = parseFloat(document.getElementById('temp').value);
+            const ph = parseFloat(document.getElementById('ph').value);
+            const calcium = parseFloat(document.getElementById('calcium').value);
+            const alkalinity = parseFloat(document.getElementById('alkalinity').value);
+            const tds = parseFloat(document.getElementById('tds').value);
+
+            // LSI = pH - pHs
+            // pHs = (9.3 + A + B) - (C + D)
+
+            // A = (log10[TDS] - 1) / 10
+            const A = (Math.log10(tds) - 1) / 10;
+
+            // B = -13.12 × log10(°C + 273) + 34.55
+            const tempK = temp + 273;
+            const B = -13.12 * Math.log10(tempK) + 34.55;
+
+            // C = log10[Ca²⁺ as CaCO3] - 0.4
+            const C = Math.log10(calcium) - 0.4;
+
+            // D = log10[Alkalinity as CaCO3]
+            const D = Math.log10(alkalinity);
+
+            // Calculate pHs
+            const pHs = (9.3 + A + B) - (C + D);
+
+            // Calculate LSI
+            const lsi = ph - pHs;
+
+            return lsi;
+        }
+
+        function updateLSI() {
+            const lsi = calculateLSI();
+            const lsiElement = document.getElementById('lsiValue');
+            const statusElement = document.getElementById('lsiStatus');
+            const recommendationElement = document.getElementById('lsiRecommendation');
+
+            // Update value
+            lsiElement.textContent = lsi >= 0 ? `+${lsi.toFixed(2)}` : lsi.toFixed(2);
+
+            // Update color and status
+            if (lsi > 0.5) {
+                lsiElement.className = 'lsi-value positive';
+                statusElement.textContent = 'Scale-Forming (High LSI)';
+                recommendationElement.textContent = 'CAUTION: Water is supersaturated with calcium carbonate. Expect mineral scale deposits on pipes, water heaters, and fixtures. Consider lowering pH or reducing alkalinity.';
+            } else if (lsi < -0.5) {
+                lsiElement.className = 'lsi-value negative';
+                statusElement.textContent = 'Corrosive (Low LSI)';
+                recommendationElement.textContent = 'CAUTION: Water is aggressive and may corrode metallic pipes. Risk of lead/copper leaching. Consider raising pH or adding corrosion inhibitor (orthophosphate).';
+            } else {
+                lsiElement.className = 'lsi-value neutral';
+                statusElement.textContent = 'Balanced (Stable)';
+                recommendationElement.textContent = 'LSI is within acceptable range (-0.5 to +0.5). Water chemistry is balanced. Continue monitoring distribution system for any changes.';
+            }
+
+            // Update state
+            state.temp = parseFloat(document.getElementById('temp').value);
+            state.ph = parseFloat(document.getElementById('ph').value);
+            state.calcium = parseFloat(document.getElementById('calcium').value);
+            state.alkalinity = parseFloat(document.getElementById('alkalinity').value);
+            state.tds = parseFloat(document.getElementById('tds').value);
+        }
+
+        // Add event listeners to all form inputs
+        document.querySelectorAll('#labForm input').forEach(input => {
+            input.addEventListener('input', updateLSI);
+        });
+
+        // Customer Complaint Response
+        function respondComplaint(action) {
+            const responseBox = document.getElementById('responseBox');
+            const responseText = document.getElementById('responseText');
+            let message = '';
+
+            switch(action) {
+                case 'investigate':
+                    const lsi = calculateLSI();
+                    message = `LSI Check: Current LSI is ${lsi >= 0 ? '+' : ''}${lsi.toFixed(2)}. `;
+                    if (lsi > 0.5) {
+                        message += 'CONFIRMED: Water is scale-forming. White deposits are calcium carbonate buildup. Recommend adjusting pH to 7.2 or adding scale inhibitor. Customer will need to descale water heater.';
+                    } else {
+                        message += 'LSI is balanced. Deposits may be from customer\'s internal plumbing or water heater anode rod deterioration. Recommend customer consult plumber.';
+                    }
+                    break;
+                case 'adjust':
+                    message = 'Chemistry Adjustment Initiated: Lowering finished water pH from 7.5 to 7.2 using CO₂ injection. This will reduce LSI to near zero, preventing future scale formation. Change will take 24 hours to reach Zone 3. Notify customer of timeline.';
+                    // Update pH in form
+                    document.getElementById('ph').value = 7.2;
+                    updateLSI();
+                    break;
+                case 'flush':
+                    message = 'System Flushing Scheduled: Zone 3 dead-end flushing program scheduled for next Tuesday, 10 PM - 2 AM. Will reduce residence time and clear accumulated minerals. Estimated water loss: 500,000 gallons. Notify residents of possible low pressure.';
+                    break;
+            }
+
+            responseText.textContent = message;
+            responseBox.classList.add('show');
+        }
+
+        // Summer Scenario
+        function triggerSummerScenario() {
+            if (state.season === 'summer') {
+                // Reset to normal
+                document.getElementById('temp').value = 15;
+                document.getElementById('ph').value = 7.5;
+                document.getElementById('z3temp').textContent = 15;
+                document.getElementById('z3ammonia').textContent = '0.18';
+                document.getElementById('nitroZ3').className = 'nitro-alert high';
+
+                // Update zone info
+                document.getElementById('z1residence').textContent = '8';
+                document.getElementById('z2residence').textContent = '5';
+                document.getElementById('z3residence').textContent = '36';
+
+                document.querySelector('.scenario-btn').textContent = '🌡️ SUMMER SCENARIO';
+                state.season = 'normal';
+            } else {
+                // Trigger summer conditions
+                document.getElementById('temp').value = 24;
+                document.getElementById('ph').value = 7.2;
+                document.getElementById('z3temp').textContent = 24;
+                document.getElementById('z3ammonia').textContent = '0.45';
+                document.getElementById('nitroZ3').className = 'nitro-alert high';
+
+                // Update zone info for higher summer demand
+                document.getElementById('z1flow').textContent = '35.0';
+                document.getElementById('z2flow').textContent = '52.0';
+                document.getElementById('z3flow').textContent = '28.0';
+                document.getElementById('z1residence').textContent = '6';
+                document.getElementById('z2residence').textContent = '4';
+                document.getElementById('z3residence').textContent = '28';
+
+                document.querySelector('.scenario-btn').textContent = '❄️ RESET TO WINTER';
+                state.season = 'summer';
+
+                alert('🌡️ SUMMER SCENARIO ACTIVATED\n\n' +
+                      '• Water temperature increased to 24°C\n' +
+                      '• pH dropped to 7.2 (CO₂ outgassing)\n' +
+                      '• Zone 3 ammonia spiked to 0.45 mg/L\n' +
+                      '• Residence times decreased (higher demand)\n' +
+                      '• Nitrification risk CRITICAL in Zone 3\n\n' +
+                      'Operator Action Required: Increase chlorine dose or convert to chloramine to prevent nitrification.');
+            }
+
+            updateLSI();
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            updateLSI();
+        });
+    </script>
+</body>
+</html>

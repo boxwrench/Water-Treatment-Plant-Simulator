@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Treatment Classroom — Module 4: Disinfection & CT Compliance (v2.0)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #1a1a2e;
+            color: #e8e8e8;
+            overflow-x: hidden;
+        }
+        .header {
+            background-color: #16213e;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid #00ff88;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            color: #00ff88;
+        }
+        .header .plant-info {
+            color: #888888;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .header .plant-info strong {
+            color: #00ff88;
+        }
+        .main-container {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+            padding: 20px;
+            height: calc(100vh - 180px);
+        }
+        .controls-section {
+            grid-column: 1 / 2;
+            grid-row: 1 / 3;
+            background-color: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #00ff88;
+            overflow-y: auto;
+        }
+        .scada-section {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+            background-color: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #00ff88;
+        }
+        .compliance-section {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+            background-color: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #00ff88;
+            overflow-y: auto;
+        }
+        .section-title {
+            color: #00ff88;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #0f3460;
+            padding-bottom: 10px;
+        }
+        .scada-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .scada-meter {
+            background-color: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #444;
+            text-align: center;
+        }
+        .scada-label {
+            color: #888888;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        .scada-value {
+            font-family: 'Consolas', monospace;
+            font-size: 32px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        .scada-unit {
+            font-size: 14px;
+            color: #888;
+            margin-left: 5px;
+        }
+        .control-group {
+            background-color: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .control-label {
+            color: #888888;
+            font-size: 13px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .control-value {
+            font-family: 'Consolas', monospace;
+            color: #00ff88;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: #1a1a2e;
+            outline: none;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        .ct-compliance {
+            background-color: #0f3460;
+            padding: 25px;
+            border-radius: 10px;
+            border: 3px solid #00ff88;
+            margin-bottom: 20px;
+        }
+        .ct-compliance.violation {
+            border-color: #ff4444;
+            background-color: rgba(255, 68, 68, 0.1);
+        }
+        .ct-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #1a1a2e;
+        }
+        .ct-row:last-child {
+            border-bottom: none;
+        }
+        .ct-label {
+            color: #888888;
+        }
+        .ct-value {
+            font-family: 'Consolas', monospace;
+            font-weight: bold;
+            font-size: 18px;
+            color: #e8e8e8;
+        }
+        .ct-status {
+            text-align: center;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .ct-status.pass {
+            background-color: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+        .ct-status.fail {
+            background-color: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+        .compliance-log {
+            background-color: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .log-header {
+            color: #00ff88;
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #1a1a2e;
+            padding-bottom: 5px;
+        }
+        .log-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        .log-label {
+            color: #888;
+        }
+        .scenario-button {
+            width: 100%;
+            padding: 15px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        .scenario-button:hover {
+            background-color: #cc0000;
+        }
+        .scenario-button.active {
+            background-color: #ffaa00;
+        }
+        .instructions {
+            background-color: rgba(0, 255, 136, 0.1);
+            border-left: 4px solid #00ff88;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .action-box {
+            background-color: rgba(255, 170, 0, 0.1);
+            border-left: 4px solid #ffaa00;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .action-title {
+            color: #ffaa00;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-increase {
+            background-color: #00ff88;
+            color: #1a1a2e;
+        }
+        .btn-decrease {
+            background-color: #ff4444;
+            color: white;
+        }
+        .footer {
+            background-color: #16213e;
+            padding: 15px 20px;
+            border-top: 3px solid #00ff88;
+            text-align: center;
+            font-size: 13px;
+            color: #888888;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MODULE 4: DISINFECTION & CT COMPLIANCE</h1>
+        <div class="plant-info">
+            <strong>100 MGD Regional Water Treatment Plant</strong> | 2 Clearwells: 2 MG each (4 MG total storage)
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- CONTROLS SECTION -->
+        <div class="controls-section">
+            <div class="section-title">⚙️ Operator Controls</div>
+
+            <div class="instructions">
+                <strong>Operator Instructions:</strong> Monitor SCADA instruments continuously. CT = Residual × T₁₀ (effective contact time). Must meet EPA required CT for 3-log Giardia inactivation. Winter is critical - cold water dramatically increases required CT.
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Chlorine Dose</span>
+                    <span class="control-value"><span id="doseDisplay">2.5</span> mg/L</span>
+                </div>
+                <input type="range" id="chlorineDose" min="0.5" max="5.0" value="2.5" step="0.1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Plant Flow Rate</span>
+                    <span class="control-value"><span id="flowDisplay">100</span> MGD</span>
+                </div>
+                <input type="range" id="flowRate" min="60" max="120" value="100" step="5">
+            </div>
+
+            <button class="scenario-button" id="winterButton" onclick="toggleWinter()">
+                ❄️ SIMULATE WINTER CONDITIONS (Cold Snap)
+            </button>
+
+            <div id="actionBox" class="action-box" style="display: none;">
+                <div class="action-title">⚠️ CT VIOLATION - OPERATOR ACTION REQUIRED</div>
+                <div style="font-size: 12px; color: #e8e8e8; margin-bottom: 10px;">
+                    Choose how to restore compliance:
+                </div>
+                <div class="action-buttons">
+                    <button class="action-btn btn-increase" onclick="increaseChlorine()">
+                        INCREASE CHLORINE
+                    </button>
+                    <button class="action-btn btn-decrease" onclick="reduceFlow()">
+                        REDUCE FLOW
+                    </button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Clearwell Baffling</span>
+                    <span class="control-value"><span id="bafflingDisplay">0.60</span></span>
+                </div>
+                <input type="range" id="baffling" min="0.1" max="0.9" value="0.60" step="0.05">
+                <div style="font-size: 11px; color: #888; margin-top: 8px;">
+                    Measured from tracer study. Typical: 0.5-0.7 for baffled clearwells.
+                </div>
+            </div>
+
+            <div class="control-group" style="margin-top: 20px;">
+                <div style="color: #888; font-size: 12px; margin-bottom: 10px;">
+                    <strong>Plant Configuration:</strong>
+                </div>
+                <div style="font-size: 11px; color: #888; line-height: 1.6;">
+                    • 2 Clearwells: 2 million gallons each<br>
+                    • Total: 4 MG storage capacity<br>
+                    • At 100 MGD: 58 min theoretical detention<br>
+                    • With 0.60 baffling: 35 min effective contact (T₁₀)
+                </div>
+            </div>
+        </div>
+
+        <!-- SCADA SECTION -->
+        <div class="scada-section">
+            <div class="section-title">📊 SCADA - Live Instrumentation</div>
+            <div class="scada-panel">
+                <div class="scada-meter">
+                    <div class="scada-label">Chlorine Residual Analyzer</div>
+                    <div class="scada-value">
+                        <span id="residualReading">2.3</span><span class="scada-unit">mg/L</span>
+                    </div>
+                </div>
+
+                <div class="scada-meter">
+                    <div class="scada-label">Flow Meter (Total Plant)</div>
+                    <div class="scada-value">
+                        <span id="flowReading">100</span><span class="scada-unit">MGD</span>
+                    </div>
+                </div>
+
+                <div class="scada-meter">
+                    <div class="scada-label">Temperature Probe</div>
+                    <div class="scada-value">
+                        <span id="tempReading">12</span><span class="scada-unit">°C</span>
+                    </div>
+                </div>
+
+                <div class="scada-meter">
+                    <div class="scada-label">pH Analyzer</div>
+                    <div class="scada-value">
+                        <span id="phReading">7.6</span><span class="scada-unit"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ct-compliance" id="ctBox">
+                <div class="ct-row">
+                    <span class="ct-label">Residual (C):</span>
+                    <span class="ct-value" id="ctResidual">2.3 mg/L</span>
+                </div>
+                <div class="ct-row">
+                    <span class="ct-label">Contact Time (T₁₀):</span>
+                    <span class="ct-value" id="ctT10">35 min</span>
+                </div>
+                <div class="ct-row">
+                    <span class="ct-label">CT Achieved:</span>
+                    <span class="ct-value" id="ctAchieved" style="color: #00ff88;">80.5 mg·min/L</span>
+                </div>
+                <div class="ct-row" style="border-top: 2px solid #1a1a2e; margin-top: 10px; padding-top: 15px;">
+                    <span class="ct-label">Required CT (3-log Giardia):</span>
+                    <span class="ct-value" id="ctRequired">68 mg·min/L</span>
+                </div>
+                <div class="ct-status pass" id="ctStatus">
+                    ✓ COMPLIANCE (Margin: +18%)
+                </div>
+                <div class="ct-row" style="margin-top: 15px;">
+                    <span class="ct-label">Log Inactivation:</span>
+                    <span class="ct-value" id="logInactivation" style="font-size: 16px; color: #00ff88;">3.5 logs</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPLIANCE SECTION -->
+        <div class="compliance-section">
+            <div class="section-title">📋 Regulatory Compliance Log</div>
+            <div class="compliance-log">
+                <div class="log-header">CT COMPLIANCE LOG - <span id="logDate"></span></div>
+                <div class="log-row">
+                    <span class="log-label">Plant Flow:</span>
+                    <span id="logFlow">100 MGD</span>
+                </div>
+                <div class="log-row">
+                    <span class="log-label">Source Water Temp:</span>
+                    <span id="logTemp">12°C</span>
+                </div>
+                <div class="log-row">
+                    <span class="log-label">Finished Water pH:</span>
+                    <span id="logPH">7.6</span>
+                </div>
+                <div class="log-row">
+                    <span class="log-label">Chlorine Dose Applied:</span>
+                    <span id="logDose">2.5 mg/L</span>
+                </div>
+                <div class="log-row">
+                    <span class="log-label">Residual (Entry Point):</span>
+                    <span id="logResidual">2.3 mg/L</span>
+                </div>
+                <div class="log-row">
+                    <span class="log-label">Clearwell Volume:</span>
+                    <span>4.0 MG</span>
+                </div>
+                <div class="log-row">
+                    <span class="log-label">Theoretical Contact Time:</span>
+                    <span id="logTheoretical">58 min</span>
+                </div>
+                <div class="log-row">
+                    <span class="log-label">Baffling Factor (T₁₀/T):</span>
+                    <span id="logBaffling">0.60</span>
+                </div>
+                <div class="log-row">
+                    <span class="log-label">T₁₀ Contact Time:</span>
+                    <span id="logT10">35 min</span>
+                </div>
+                <div style="border-top: 1px solid #1a1a2e; margin: 10px 0;"></div>
+                <div class="log-row">
+                    <span class="log-label">CT Achieved:</span>
+                    <span id="logCTAchieved" style="color: #00ff88;">80.5 mg·min/L</span>
+                </div>
+                <div class="log-row">
+                    <span class="log-label">CT Required (Giardia 3-log):</span>
+                    <span id="logCTRequired">68 mg·min/L</span>
+                </div>
+                <div class="log-row">
+                    <span class="log-label">Log Inactivation:</span>
+                    <span id="logLogs" style="color: #00ff88;">3.5 logs</span>
+                </div>
+                <div style="border-top: 1px solid #1a1a2e; margin: 10px 0;"></div>
+                <div class="log-row">
+                    <span class="log-label">COMPLIANCE STATUS:</span>
+                    <span id="logStatus" style="color: #00ff88; font-weight: bold;">PASS</span>
+                </div>
+                <div style="margin-top: 15px; font-size: 11px; color: #888;">
+                    Operator: <span id="logOperator">System Auto-Log</span><br>
+                    Report Generated: <span id="logTimestamp"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        💡 <strong>Operator Tip:</strong> At 100 MGD with 4 MG storage, theoretical detention is 58 minutes. But baffling factor (0.60 typical) means effective contact is only 35 minutes (T₁₀). Winter is critical: at 2°C and pH 8, required CT can be 3× higher than summer. If CT violation occurs, you can either: (1) increase chlorine dose, or (2) reduce flow to increase contact time. Never compromise disinfection!
+    </div>
+
+    <script>
+// ═══════════════════════════════════════════════════════════
+// MODULE 4 V2.0: DISINFECTION & CT - 100 MGD PLANT
+// REGULATORY COMPLIANCE FOCUS
+// ═══════════════════════════════════════════════════════════
+
+const CLEARWELL_SPECS = {
+    volume: 4.0, // Million gallons (2 × 2 MG)
+    count: 2,
+    volumeEach: 2.0
+};
+
+let state = {
+    chlorineDose: 2.5, // mg/L
+    flowRate: 100, // MGD
+    baffling: 0.60,
+    temperature: 12, // °C (ambient)
+    pH: 7.6,
+    winterMode: false
+};
+
+function calculateRequiredCT(temp, pH) {
+    // EPA regression for 3-log Giardia inactivation
+    // CT = 0.933 × 3 × (1.038^(20-T)) × (0.765 × pH - 2.95)
+    const logTarget = 3.0;
+    const tempFactor = Math.pow(1.038, (20 - temp));
+    const pHFactor = 0.765 * pH - 2.95;
+    return 0.933 * logTarget * tempFactor * pHFactor;
+}
+
+function calculateResidual(dose) {
+    // Simplified: assume 0.2 mg/L demand
+    return Math.max(0, dose - 0.2);
+}
+
+function calculateT10(flow, baffling) {
+    // T₁₀ = (Volume / Flow) × Baffling Factor
+    const theoreticalTime = (CLEARWELL_SPECS.volume / flow) * 1440; // minutes per day
+    return theoreticalTime * baffling;
+}
+
+function updateSystem() {
+    // SCADA readings
+    const residual = calculateResidual(state.chlorineDose);
+    document.getElementById('residualReading').textContent = residual.toFixed(1);
+    document.getElementById('flowReading').textContent = state.flowRate;
+    document.getElementById('tempReading').textContent = state.temperature;
+    document.getElementById('phReading').textContent = state.pH.toFixed(1);
+
+    // CT Calculation
+    const T10 = calculateT10(state.flowRate, state.baffling);
+    const ctAchieved = residual * T10;
+    const ctRequired = calculateRequiredCT(state.temperature, state.pH);
+    const logInactivation = Math.min(3.0, 3.0 * (ctAchieved / ctRequired));
+
+    document.getElementById('ctResidual').textContent = residual.toFixed(1) + ' mg/L';
+    document.getElementById('ctT10').textContent = Math.round(T10) + ' min';
+    document.getElementById('ctAchieved').textContent = ctAchieved.toFixed(1) + ' mg·min/L';
+    document.getElementById('ctRequired').textContent = ctRequired.toFixed(1) + ' mg·min/L';
+    document.getElementById('logInactivation').textContent = logInactivation.toFixed(1) + ' logs';
+
+    // Compliance status
+    const ctBox = document.getElementById('ctBox');
+    const ctStatus = document.getElementById('ctStatus');
+    const actionBox = document.getElementById('actionBox');
+
+    if (ctAchieved >= ctRequired) {
+        const margin = ((ctAchieved - ctRequired) / ctRequired * 100).toFixed(0);
+        ctBox.className = 'ct-compliance';
+        ctStatus.className = 'ct-status pass';
+        ctStatus.textContent = `✓ COMPLIANCE (Margin: +${margin}%)`;
+        document.getElementById('ctAchieved').style.color = '#00ff88';
+        document.getElementById('logInactivation').style.color = '#00ff88';
+        actionBox.style.display = 'none';
+    } else {
+        const deficit = ((ctRequired - ctAchieved) / ctRequired * 100).toFixed(0);
+        ctBox.className = 'ct-compliance violation';
+        ctStatus.className = 'ct-status fail';
+        ctStatus.textContent = `❌ VIOLATION (Deficit: -${deficit}%)`;
+        document.getElementById('ctAchieved').style.color = '#ff4444';
+        document.getElementById('logInactivation').style.color = '#ff4444';
+        actionBox.style.display = 'block';
+    }
+
+    // Compliance log
+    const theoreticalTime = (CLEARWELL_SPECS.volume / state.flowRate) * 1440;
+    document.getElementById('logFlow').textContent = state.flowRate + ' MGD';
+    document.getElementById('logTemp').textContent = state.temperature + '°C';
+    document.getElementById('logPH').textContent = state.pH.toFixed(1);
+    document.getElementById('logDose').textContent = state.chlorineDose.toFixed(1) + ' mg/L';
+    document.getElementById('logResidual').textContent = residual.toFixed(1) + ' mg/L';
+    document.getElementById('logTheoretical').textContent = theoreticalTime.toFixed(0) + ' min';
+    document.getElementById('logBaffling').textContent = state.baffling.toFixed(2);
+    document.getElementById('logT10').textContent = T10.toFixed(0) + ' min';
+    document.getElementById('logCTAchieved').textContent = ctAchieved.toFixed(1) + ' mg·min/L';
+    document.getElementById('logCTRequired').textContent = ctRequired.toFixed(1) + ' mg·min/L';
+    document.getElementById('logLogs').textContent = logInactivation.toFixed(1) + ' logs';
+
+    if (ctAchieved >= ctRequired) {
+        document.getElementById('logCTAchieved').style.color = '#00ff88';
+        document.getElementById('logLogs').style.color = '#00ff88';
+        document.getElementById('logStatus').textContent = 'PASS';
+        document.getElementById('logStatus').style.color = '#00ff88';
+    } else {
+        document.getElementById('logCTAchieved').style.color = '#ff4444';
+        document.getElementById('logLogs').style.color = '#ff4444';
+        document.getElementById('logStatus').textContent = 'FAIL - VIOLATION';
+        document.getElementById('logStatus').style.color = '#ff4444';
+    }
+
+    // Timestamps
+    const now = new Date();
+    document.getElementById('logDate').textContent = now.toLocaleDateString();
+    document.getElementById('logTimestamp').textContent = now.toLocaleString();
+}
+
+function toggleWinter() {
+    state.winterMode = !state.winterMode;
+    const button = document.getElementById('winterButton');
+
+    if (state.winterMode) {
+        // Winter scenario: cold water, high pH
+        state.temperature = 2; // °C (near freezing)
+        state.pH = 8.0; // Higher pH typical in winter
+        button.textContent = '☀️ END WINTER SCENARIO (Return to Normal)';
+        button.classList.add('active');
+    } else {
+        // Normal conditions
+        state.temperature = 12;
+        state.pH = 7.6;
+        button.textContent = '❄️ SIMULATE WINTER CONDITIONS (Cold Snap)';
+        button.classList.remove('active');
+    }
+
+    updateSystem();
+}
+
+function increaseChlorine() {
+    // Increase chlorine by 0.5 mg/L
+    state.chlorineDose = Math.min(5.0, state.chlorineDose + 0.5);
+    document.getElementById('chlorineDose').value = state.chlorineDose;
+    document.getElementById('doseDisplay').textContent = state.chlorineDose.toFixed(1);
+    updateSystem();
+}
+
+function reduceFlow() {
+    // Reduce flow by 10 MGD
+    state.flowRate = Math.max(60, state.flowRate - 10);
+    document.getElementById('flowRate').value = state.flowRate;
+    document.getElementById('flowDisplay').textContent = state.flowRate;
+    updateSystem();
+}
+
+// Event listeners
+document.getElementById('chlorineDose').addEventListener('input', (e) => {
+    state.chlorineDose = parseFloat(e.target.value);
+    document.getElementById('doseDisplay').textContent = state.chlorineDose.toFixed(1);
+    updateSystem();
+});
+
+document.getElementById('flowRate').addEventListener('input', (e) => {
+    state.flowRate = parseInt(e.target.value);
+    document.getElementById('flowDisplay').textContent = state.flowRate;
+    updateSystem();
+});
+
+document.getElementById('baffling').addEventListener('input', (e) => {
+    state.baffling = parseFloat(e.target.value);
+    document.getElementById('bafflingDisplay').textContent = state.baffling.toFixed(2);
+    updateSystem();
+});
+
+// Initialize
+updateSystem();
+    </script>
+</body>
+</html>

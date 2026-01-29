@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Treatment Classroom — Module 1: Coagulation & Flocculation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #1a1a2e;
+            color: #e8e8e8;
+            overflow-x: hidden;
+        }
+        .header {
+            background-color: #16213e;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #00ff88;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        .header p {
+            color: #888888;
+            font-size: 14px;
+        }
+        .main-container {
+            display: flex;
+            height: calc(100vh - 140px);
+        }
+        .left-panel {
+            width: 40%;
+            background-color: #16213e;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid #00ff88;
+        }
+        .right-panel {
+            width: 60%;
+            background-color: #1a1a2e;
+            position: relative;
+        }
+        .control-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #1a1a2e;
+            border-radius: 8px;
+        }
+        .control-section h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        .slider-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #00ff88;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #0f3460;
+            outline: none;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        .status-indicator {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 8px 0;
+            font-size: 13px;
+            border-left: 4px solid;
+        }
+        .status-good {
+            background-color: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+        .status-warning {
+            background-color: rgba(255, 170, 0, 0.1);
+            border-color: #ffaa00;
+        }
+        .status-danger {
+            background-color: rgba(255, 68, 68, 0.1);
+            border-color: #ff4444;
+        }
+        .status-neutral {
+            background-color: rgba(136, 136, 136, 0.1);
+            border-color: #888888;
+        }
+        .metric-display {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #0f3460;
+            border-radius: 5px;
+        }
+        .metric-label {
+            color: #888888;
+        }
+        .metric-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #e8e8e8;
+            font-weight: bold;
+        }
+        .reset-button {
+            width: 100%;
+            padding: 15px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .reset-button:hover {
+            background-color: #cc0000;
+        }
+        .footer {
+            background-color: #16213e;
+            padding: 15px 20px;
+            border-top: 2px solid #00ff88;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .analogy-box {
+            flex: 1;
+            padding: 10px;
+            background-color: rgba(0, 255, 136, 0.1);
+            border-left: 4px solid #00ff88;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .learn-more {
+            margin-left: 20px;
+            padding: 10px 20px;
+            background-color: #00ff88;
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .learn-more:hover {
+            background-color: #00cc6f;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #00ff88;
+            margin-left: 5px;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 280px;
+            background-color: #16213e;
+            color: #e8e8e8;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid #00ff88;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        #visualization {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MODULE 1: COAGULATION & FLOCCULATION</h1>
+        <p>Understanding Charge Neutralization, Mixing Energy, and Temperature Effects</p>
+    </div>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="control-section">
+                <h3>Rapid Mix Basin</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>RPM <span class="tooltip">?<span class="tooltiptext">How violently you stir to disperse the coagulant throughout the water. High speed is GOOD here — you want chaos to mix the chemical quickly and evenly.</span></span></span>
+                        <span class="slider-value" id="rapidRpmValue">100</span>
+                    </div>
+                    <input type="range" id="rapidRpm" min="0" max="300" value="100" step="5">
+                </div>
+                <div class="metric-display">
+                    <span class="metric-label">G-Value:</span>
+                    <span class="metric-value" id="rapidG">125 s⁻¹</span>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Flocculation Basin</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>RPM <span class="tooltip">?<span class="tooltiptext">Gentle stirring to let particles bump and stick. Too fast = shearing floc apart. This is NOT rapid mix! Keep it gentle to grow big, settleable floc.</span></span></span>
+                        <span class="slider-value" id="flocRpmValue">20</span>
+                    </div>
+                    <input type="range" id="flocRpm" min="0" max="80" value="20" step="1">
+                </div>
+                <div class="metric-display">
+                    <span class="metric-label">G-Value:</span>
+                    <span class="metric-value" id="flocG">18 s⁻¹</span>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Chemistry</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Coagulant Dose (mg/L) <span class="tooltip">?<span class="tooltiptext">How much 'stickiness' you're adding. Like adding glue to dust. Too much flips the charge backwards and particles repel again!</span></span></span>
+                        <span class="slider-value" id="doseValue">15</span>
+                    </div>
+                    <input type="range" id="dose" min="0" max="50" value="15" step="1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Temperature (°C) <span class="tooltip">?<span class="tooltiptext">Cold water is 'thicker' (higher viscosity) — needs more energy to mix, floc forms slower. Winter is hard on coag/floc processes.</span></span></span>
+                        <span class="slider-value" id="tempValue">15</span>
+                    </div>
+                    <input type="range" id="temperature" min="1" max="30" value="15" step="1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Raw Water Turbidity (NTU) <span class="tooltip">?<span class="tooltiptext">How dirty the incoming water is. More particles = more coagulant needed to neutralize all those charges.</span></span></span>
+                        <span class="slider-value" id="turbidityValue">25</span>
+                    </div>
+                    <input type="range" id="turbidity" min="1" max="100" value="25" step="1">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Status</h3>
+                <div class="metric-display">
+                    <span class="metric-label">Particle Charge (Zeta):</span>
+                    <span class="metric-value" id="zetaValue">-8 mV</span>
+                </div>
+                <div class="metric-display">
+                    <span class="metric-label">Average Floc Size:</span>
+                    <span class="metric-value" id="flocSize">Medium</span>
+                </div>
+                <div id="statusMessage" class="status-indicator status-good">
+                    ✓ Good coagulation — particles aggregating well
+                </div>
+            </div>
+
+            <button class="reset-button" onclick="resetSimulation()">RESET SIMULATION</button>
+        </div>
+
+        <div class="right-panel">
+            <div id="visualization"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="analogy-box">
+            💡 <strong>Analogy:</strong> Imagine particles are ping-pong balls all covered with the same magnetic pole — they repel each other and float around never touching. Coagulant is like flipping some of the magnets so they can attract and stick together. Mixing is how often they bump. Too gentle = no bumps. Too rough in the floc basin = you tear apart the clusters (like building a house of cards in a wind tunnel).
+        </div>
+        <a href="https://www.epa.gov/dwreginfo/coagulation-and-flocculation-water-treatment" target="_blank" class="learn-more">📚 Learn More</a>
+    </div>
+
+    <script>
+// ═══════════════════════════════════════════════════════════
+// MODULE: COAGULATION & FLOCCULATION
+// DOMAIN: Coagulation
+// VERSION: 1.0
+// ═══════════════════════════════════════════════════════════
+
+// --- CONFIGURATION ---
+const CONFIG = {
+    particleCount: 100,
+    canvasWidth: window.innerWidth * 0.6,
+    canvasHeight: window.innerHeight - 140,
+    basinVolume: 1000, // m³ (for G-value calc)
+};
+
+// --- STATE ---
+let state = {
+    rapidRpm: 100,
+    flocRpm: 20,
+    dose: 15,
+    temperature: 15,
+    turbidity: 25,
+    particles: [],
+    engine: null,
+    world: null,
+    zetaPotential: -25,
+    avgFlocSize: 0,
+};
+
+// --- PHYSICS ENGINE ---
+function calculateViscosity(tempC) {
+    // Viscosity-temperature relationship: μ(T) = 0.00002414 × 10^(247.8/(T+133.15))
+    const exponent = 247.8 / (tempC + 133.15);
+    return 0.00002414 * Math.pow(10, exponent);
+}
+
+function calculateGValue(rpm, tempC, volume) {
+    // G = √(P / μV) where P ∝ RPM³
+    const mu = calculateViscosity(tempC);
+    const power = Math.pow(rpm / 100, 3) * 1000; // Normalized power in watts
+    const gValue = Math.sqrt(power / (mu * volume));
+    return Math.round(gValue);
+}
+
+function calculateZetaPotential(dose) {
+    // Simplified model: particles start at -25 mV
+    // Optimal dose around 15 mg/L brings it near 0
+    // Overdose (>40 mg/L) reverses charge to positive
+    if (dose === 0) return -25;
+    if (dose < 15) return -25 + (dose / 15) * 17; // Approaches -8 mV at 15 mg/L
+    if (dose <= 40) return -8 + ((dose - 15) / 25) * 10; // -8 to +2 mV
+    // Overdose: charge reversal
+    return 2 + ((dose - 40) / 10) * 18; // Reverses toward +20 mV
+}
+
+function canParticlesAttach(zeta, dose) {
+    // Particles attach if |Zeta| < 10 mV and dose > 0
+    return Math.abs(zeta) < 10 && dose > 5;
+}
+
+function calculateStatus() {
+    const zeta = state.zetaPotential;
+    const dose = state.dose;
+    const flocG = calculateGValue(state.flocRpm, state.temperature, CONFIG.basinVolume);
+
+    // Check failure conditions
+    if (dose === 0) {
+        return { type: 'neutral', message: '⚪ NO COAGULATION — Zero dose: particles cannot stick' };
+    }
+    if (dose > 40) {
+        return { type: 'danger', message: '⚠ CHARGE REVERSAL — Overdose: particles repelling again!' };
+    }
+    if (flocG > 70) {
+        return { type: 'warning', message: '⚠ SHEAR DAMAGE — Floc basin RPM too high: breaking floc apart' };
+    }
+    if (state.temperature < 5 && state.rapidRpm < 80) {
+        return { type: 'warning', message: '⚠ INADEQUATE MIXING — Cold water needs more mixing energy' };
+    }
+    if (dose < state.turbidity / 5) {
+        return { type: 'warning', message: '⚠ INSUFFICIENT DOSE — Increase coagulant for high turbidity' };
+    }
+    if (canParticlesAttach(zeta, dose) && flocG < 70) {
+        return { type: 'good', message: '✓ Good coagulation — particles aggregating well' };
+    }
+
+    return { type: 'neutral', message: '○ Suboptimal conditions' };
+}
+
+function updateUI() {
+    // Update slider displays
+    document.getElementById('rapidRpmValue').textContent = state.rapidRpm;
+    document.getElementById('flocRpmValue').textContent = state.flocRpm;
+    document.getElementById('doseValue').textContent = state.dose;
+    document.getElementById('tempValue').textContent = state.temperature;
+    document.getElementById('turbidityValue').textContent = state.turbidity;
+
+    // Calculate and display G-values
+    const rapidG = calculateGValue(state.rapidRpm, state.temperature, CONFIG.basinVolume);
+    const flocG = calculateGValue(state.flocRpm, state.temperature, CONFIG.basinVolume);
+    document.getElementById('rapidG').textContent = rapidG + ' s⁻¹';
+    document.getElementById('flocG').textContent = flocG + ' s⁻¹';
+
+    // Calculate zeta potential
+    state.zetaPotential = calculateZetaPotential(state.dose);
+    document.getElementById('zetaValue').textContent = state.zetaPotential.toFixed(1) + ' mV';
+
+    // Floc size estimation
+    const avgSize = state.avgFlocSize;
+    let sizeLabel = 'Small';
+    if (avgSize > 8) sizeLabel = 'Large';
+    else if (avgSize > 5) sizeLabel = 'Medium';
+    document.getElementById('flocSize').textContent = sizeLabel;
+
+    // Status message
+    const status = calculateStatus();
+    const statusDiv = document.getElementById('statusMessage');
+    statusDiv.textContent = status.message;
+    statusDiv.className = 'status-indicator status-' + status.type;
+}
+
+// --- P5.JS SKETCH ---
+let sketch = function(p) {
+    p.setup = function() {
+        const canvas = p.createCanvas(CONFIG.canvasWidth, CONFIG.canvasHeight);
+        canvas.parent('visualization');
+
+        // Setup Matter.js
+        const Engine = Matter.Engine;
+        const World = Matter.World;
+        const Bodies = Matter.Bodies;
+
+        state.engine = Engine.create();
+        state.world = state.engine.world;
+        state.world.gravity.y = 0; // No gravity, particles float
+
+        // Create particles
+        for (let i = 0; i < CONFIG.particleCount; i++) {
+            const x = p.random(50, CONFIG.canvasWidth - 50);
+            const y = p.random(50, CONFIG.canvasHeight - 50);
+            const radius = 3;
+            const particle = Bodies.circle(x, y, radius, {
+                restitution: 0.8,
+                friction: 0.01,
+                density: 0.001
+            });
+            particle.charge = -25;
+            particle.flocSize = 1;
+            World.add(state.world, particle);
+            state.particles.push(particle);
+        }
+
+        Engine.run(state.engine);
+    };
+
+    p.draw = function() {
+        p.background(26, 26, 46);
+
+        // Apply mixing turbulence
+        const flocG = calculateGValue(state.flocRpm, state.temperature, CONFIG.basinVolume);
+        const canAttach = canParticlesAttach(state.zetaPotential, state.dose);
+
+        // Random mixing forces
+        state.particles.forEach(particle => {
+            if (p.frameCount % 30 === 0) {
+                const force = flocG / 500;
+                const angle = p.random(p.TWO_PI);
+                Matter.Body.applyForce(particle, particle.position, {
+                    x: p.cos(angle) * force,
+                    y: p.sin(angle) * force
+                });
+            }
+        });
+
+        // Particle interactions
+        for (let i = 0; i < state.particles.length; i++) {
+            for (let j = i + 1; j < state.particles.length; j++) {
+                const pA = state.particles[i];
+                const pB = state.particles[j];
+                const dx = pB.position.x - pA.position.x;
+                const dy = pB.position.y - pA.position.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                // BUG FIX: Check for overdose (charge reversal prevents attachment)
+                const isOverdosed = state.dose > 40;
+
+                if (dist < 30 && canAttach && flocG < 70 && !isOverdosed) {
+                    // Particles can stick
+                    if (p.random(1) < 0.01) {
+                        pA.flocSize += 0.5;
+                        pB.flocSize += 0.5;
+                    }
+                } else if (flocG > 70 && dist < 20) {
+                    // BUG FIX: Enhanced shear breakup - more aggressive size reduction
+                    if (p.random(1) < 0.08) {
+                        pA.flocSize = Math.max(1, pA.flocSize - 0.5);
+                        pB.flocSize = Math.max(1, pB.flocSize - 0.5);
+                    }
+                } else if (isOverdosed && dist < 25) {
+                    // BUG FIX: Overdose repulsion - particles actively repel
+                    if (p.random(1) < 0.03) {
+                        const repelForce = 0.02;
+                        const angle = Math.atan2(dy, dx);
+                        Matter.Body.applyForce(pA, pA.position, {
+                            x: -Math.cos(angle) * repelForce,
+                            y: -Math.sin(angle) * repelForce
+                        });
+                        Matter.Body.applyForce(pB, pB.position, {
+                            x: Math.cos(angle) * repelForce,
+                            y: Math.sin(angle) * repelForce
+                        });
+                    }
+                }
+            }
+        }
+
+        // Calculate average floc size
+        let totalSize = 0;
+        state.particles.forEach(p => totalSize += p.flocSize);
+        state.avgFlocSize = totalSize / state.particles.length;
+
+        // Draw particles
+        state.particles.forEach(particle => {
+            const pos = particle.position;
+            const size = particle.flocSize;
+            const radius = 3 + size * 0.8;
+
+            // Color by size (small=blue, medium=green, large=yellow)
+            let col;
+            if (size < 3) col = p.color(100, 150, 255); // Blue
+            else if (size < 7) col = p.color(0, 255, 136); // Green
+            else col = p.color(255, 200, 0); // Yellow
+
+            // Charge halo
+            if (state.dose > 0) {
+                const haloSize = Math.abs(state.zetaPotential) / 3;
+                p.noFill();
+                p.stroke(255, 100, 100, 100);
+                p.strokeWeight(1);
+                p.circle(pos.x, pos.y, radius * 2 + haloSize);
+            }
+
+            // Particle body
+            p.fill(col);
+            p.noStroke();
+            p.circle(pos.x, pos.y, radius * 2);
+        });
+
+        // Wrap around edges
+        state.particles.forEach(particle => {
+            if (particle.position.x < 0) Matter.Body.setPosition(particle, {x: CONFIG.canvasWidth, y: particle.position.y});
+            if (particle.position.x > CONFIG.canvasWidth) Matter.Body.setPosition(particle, {x: 0, y: particle.position.y});
+            if (particle.position.y < 0) Matter.Body.setPosition(particle, {x: particle.position.x, y: CONFIG.canvasHeight});
+            if (particle.position.y > CONFIG.canvasHeight) Matter.Body.setPosition(particle, {x: particle.position.x, y: 0});
+        });
+
+        // Legend
+        p.fill(232, 232, 232);
+        p.noStroke();
+        p.textSize(12);
+        p.text('Particle Size: Blue = Small | Green = Medium | Yellow = Large (settleable)', 20, 30);
+        p.text('Red Halo = Particle Charge (larger halo = stronger repulsion)', 20, 50);
+    };
+};
+
+new p5(sketch);
+
+// --- UI HANDLERS ---
+document.getElementById('rapidRpm').addEventListener('input', (e) => {
+    state.rapidRpm = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('flocRpm').addEventListener('input', (e) => {
+    state.flocRpm = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('dose').addEventListener('input', (e) => {
+    state.dose = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('temperature').addEventListener('input', (e) => {
+    state.temperature = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('turbidity').addEventListener('input', (e) => {
+    state.turbidity = parseInt(e.target.value);
+    updateUI();
+});
+
+function resetSimulation() {
+    state.rapidRpm = 100;
+    state.flocRpm = 20;
+    state.dose = 15;
+    state.temperature = 15;
+    state.turbidity = 25;
+
+    document.getElementById('rapidRpm').value = 100;
+    document.getElementById('flocRpm').value = 20;
+    document.getElementById('dose').value = 15;
+    document.getElementById('temperature').value = 15;
+    document.getElementById('turbidity').value = 25;
+
+    // Reset particles
+    state.particles.forEach(p => {
+        p.flocSize = 1;
+        Matter.Body.setVelocity(p, {x: 0, y: 0});
+    });
+
+    updateUI();
+}
+
+// Initial UI update
+updateUI();
+    </script>
+</body>
+</html>

@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>100 MGD SCADA — Disinfection & CT</title>
+    <style>
+        :root {
+            --bg-deep: #0a0e17;
+            --panel-bg: rgba(22, 33, 62, 0.75);
+            --panel-border: rgba(0, 255, 136, 0.3);
+            --glass-blur: 15px;
+            --accent-safe: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff4444;
+            --text-primary: #e8e8e8;
+            --text-secondary: #888888;
+            --data-font: 'Consolas', 'Monaco', monospace;
+            --ui-font: 'Inter', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: var(--ui-font);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        header {
+            background: var(--panel-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border-bottom: 1px solid var(--panel-border);
+            padding: 12px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-safe);
+        }
+
+        .plant-status {
+            font-family: var(--data-font);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            height: calc(100vh - 100px);
+        }
+
+        #controls {
+            width: 380px;
+            background: linear-gradient(180deg, rgba(16, 26, 46, 0.95), rgba(10, 14, 23, 0.95));
+            backdrop-filter: blur(var(--glass-blur));
+            border-right: 1px solid var(--panel-border);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #visualization {
+            flex: 1;
+            position: relative;
+            background: #000;
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .data-readout {
+            font-family: var(--data-font);
+            color: var(--accent-safe);
+            font-size: 0.95rem;
+        }
+
+        input[type=range], select {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 255, 136, 0.1);
+            appearance: none;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-safe);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--accent-safe);
+        }
+
+        .scada-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .scada-card {
+            background: rgba(0, 255, 136, 0.03);
+            border: 1px solid rgba(0, 255, 136, 0.1);
+            padding: 10px;
+            text-align: center;
+            border-radius: 4px;
+        }
+
+        .scada-card label {
+            display: block;
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .value {
+            font-family: var(--data-font);
+            font-size: 0.9rem;
+            color: var(--accent-safe);
+        }
+
+        .value.fail { color: var(--danger); }
+
+        #alarm {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            font-family: var(--data-font);
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+            border-radius: 4px;
+            animation: scada-pulse 1s infinite;
+        }
+
+        @keyframes scada-pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; box-shadow: 0 0 15px var(--danger); }
+            100% { opacity: 0.8; }
+        }
+
+        footer {
+            height: 60px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border-top: 1px solid var(--panel-border);
+            padding: 0 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analogy {
+            font-size: 0.75rem;
+            color: var(--warning);
+            font-style: italic;
+            max-width: 60%;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--accent-safe);
+            color: var(--accent-safe);
+            padding: 5px 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+
+        .btn:hover { background: var(--accent-safe); color: var(--bg-deep); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Disinfection & CT Calculation — CCB 2</h1>
+        <div class="plant-status">PLANT CAPACITY: 100 MGD | STATUS: ONLINE</div>
+    </header>
+
+    <main>
+        <section id="controls">
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Chlorine Dose (mg/L)</span>
+                    <span class="data-readout" id="readout-dose">2.0</span>
+                </div>
+                <input type="range" id="slider-dose" min="0.5" max="5.0" value="2.0" step="0.1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Operating Volume (%)</span>
+                    <span class="data-readout" id="readout-vol">100</span>
+                </div>
+                <input type="range" id="slider-vol" min="50" max="100" value="100" step="1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Temperature (°C)</span>
+                    <span class="data-readout" id="readout-temp">15</span>
+                </div>
+                <input type="range" id="slider-temp" min="1" max="30" value="15" step="1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>pH</span>
+                    <span class="data-readout" id="readout-ph">7.5</span>
+                </div>
+                <input type="range" id="slider-ph" min="6.0" max="9.0" value="7.5" step="0.1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Ammonia (mg/L-N)</span>
+                    <span class="data-readout" id="readout-amm">0.5</span>
+                </div>
+                <input type="range" id="slider-amm" min="0" max="1.5" value="0.5" step="0.1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Baffling (T10/T)</span>
+                    <span class="data-readout" id="readout-baff">0.5</span>
+                </div>
+                <input type="range" id="slider-baff" min="0.1" max="1.0" value="0.5" step="0.1">
+            </div>
+
+            <div class="scada-grid">
+                <div class="scada-card">
+                    <label>CT Achieved</label>
+                    <div class="value" id="val-ct-ach">0 mg·min/L</div>
+                </div>
+                <div class="scada-card">
+                    <label>CT Required</label>
+                    <div class="value" id="val-ct-req">0 mg·min/L</div>
+                </div>
+                <div class="scada-card">
+                    <label>Free Residual</label>
+                    <div class="value" id="val-res">1.85 mg/L</div>
+                </div>
+                <div class="scada-card">
+                    <label>T10 Time</label>
+                    <div class="value" id="val-t10">15.0 min</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="visualization">
+            <div id="alarm">! CRITICAL: CT FAILURE — LOG INACTIVATION COMPROMISED</div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="analogy">
+            <b>Analogy:</b> Chlorine is a bouncer checking IDs. In cold water, he's sluggish. High pH is dim lighting — harder to spot the bad guys. Baffles prevent people from sneaking through the back door.
+        </div>
+        <div class="actions">
+            <a href="https://en.wikipedia.org/wiki/Chlorination" target="_blank" class="btn">Learn More</a>
+            <button class="btn" onclick="location.reload()">Reset SCADA</button>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script>
+        // --- HYDRAULICS & PHYSICS ---
+        const HYDRAULICS = {
+            TOTAL_PLANT_MGD: 100,
+            BASIN_VOLUME_MAX: 2083333, // 30 min at 100 MGD
+            
+            viscosity(T) { return 0.00002414 * Math.pow(10, 247.8 / (T + 133.15)); },
+            
+            // EPA CT Equation for 3-log Giardia
+            calculateCTReq(T, ph) {
+                const T_factor = Math.pow(1.038, 20 - T);
+                const ph_factor = (0.765 * ph - 2.95);
+                return 0.933 * 3 * T_factor * ph_factor;
+            }
+        };
+
+        let state = {
+            dose: 2.0, volPercent: 100, temp: 15, ph: 7.5, baff: 0.5, amm: 0.5,
+            ctAch: 0, ctReq: 0, residual: 0, t10: 15,
+            species: { mono: 0, di: 0, free: 0 },
+            pathogens: []
+        };
+
+        // --- P5.JS VISUALIZATION ---
+        new p5((p) => {
+            p.setup = () => {
+                const canvas = p.createCanvas(
+                    p.select('#visualization').width,
+                    p.select('#visualization').height
+                );
+                canvas.parent('visualization');
+                for(let i=0; i<80; i++) state.pathogens.push(new Pathogen(p));
+            };
+
+            p.draw = () => {
+                p.background(10, 14, 23);
+                
+                // 1. Breakpoint Physics
+                const ratio = state.dose / (state.amm > 0 ? state.amm : 0.001); // Cl2 : N weight ratio
+                if (ratio < 5) { // Combined Zone
+                    state.species.mono = state.dose;
+                    state.species.di = 0;
+                    state.species.free = 0;
+                    state.residual = state.dose; 
+                } else if (ratio < 7.6) { // Destruction Zone
+                    // Simplified dip
+                    const peak = state.amm * 5;
+                    const dip = (ratio - 5) / 2.6;
+                    state.residual = peak * (1 - dip * 0.9); // Drops to 10% of peak
+                    state.species.mono = state.residual;
+                    state.species.free = 0;
+                } else { // Breakpoint
+                    state.species.free = state.dose - (state.amm * 7.6);
+                    state.species.mono = 0;
+                    state.residual = state.species.free; // Only free counts for strong CT
+                }
+
+                // 2. Hydraulics
+                const totalFlowGPM = (HYDRAULICS.TOTAL_PLANT_MGD / 1440) * 1000000;
+                const currentVol = (state.volPercent / 100) * HYDRAULICS.BASIN_VOLUME_MAX;
+                const t_theoretical = currentVol / totalFlowGPM;
+                state.t10 = t_theoretical * state.baff;
+                
+                // 3. CT (Using Free Residual only for simplicity/safety)
+                state.ctAch = state.species.free * state.t10; 
+                state.ctReq = HYDRAULICS.calculateCTReq(state.temp, state.ph);
+
+                updateUI();
+                drawBasin();
+                drawCurve();
+                state.pathogens.forEach(pt => pt.update(p));
+                checkAlarms();
+            };
+
+            function drawBasin() {
+                const cols = 6;
+                const w = p.width * 0.8;
+                const h = p.height * 0.5;
+                const x0 = p.width * 0.1;
+                const y0 = p.height * 0.1;
+                const colW = w / cols;
+
+                p.noFill(); p.stroke(50); p.strokeWeight(4);
+                p.rect(x0, y0, w, h);
+
+                // Serpentine Baffles
+                for(let i=1; i<cols; i++) {
+                    p.stroke(80);
+                    if(i % 2 === 1) p.line(x0 + i*colW, y0, x0 + i*colW, y0 + h - 50);
+                    else p.line(x0 + i*colW, y0 + 50, x0 + i*colW, y0 + h);
+                }
+
+                // Water Gradient (Green = Free, Blue = Combined)
+                p.noStroke();
+                let cVal = state.species.free > 0 ? p.color(0, 255, 136) : p.color(0, 150, 255);
+                cVal.setAlpha(50 + (state.residual * 20));
+                p.fill(cVal);
+                p.rect(x0, y0, w, h);
+            }
+
+            function drawCurve() {
+                // Mini Breakpoint Curve at bottom
+                const gx = p.width * 0.1, gy = p.height * 0.7, gw = p.width * 0.8, gh = p.height * 0.25;
+                
+                // Axis
+                p.stroke(60); p.strokeWeight(2);
+                p.line(gx, gy+gh, gx+gw, gy+gh); // X
+                p.line(gx, gy, gx, gy+gh); // Y
+
+                // Curve
+                p.noFill(); p.stroke(100);
+                p.beginShape();
+                for(let r=0; r<=12; r+=0.5) {
+                    let yVal;
+                    // Mock breakpoint shape based on N=1
+                    if(r<5) yVal = r; 
+                    else if(r<7.6) yVal = 5 - ((r-5)/2.6)*4;
+                    else yVal = 1 + (r-7.6);
+                    
+                    let x = p.map(r, 0, 12, gx, gx+gw);
+                    let y = p.map(yVal, 0, 10, gy+gh, gy);
+                    p.vertex(x, y);
+                }
+                p.endShape();
+
+                // Current Point
+                const rRatio = state.dose / (state.amm||0.01);
+                const px = p.map(p.constrain(rRatio, 0, 12), 0, 12, gx, gx+gw);
+                const py = p.map(p.constrain(state.residual, 0, 10), 0, 10, gy+gh, gy);
+                
+                p.fill(state.species.free > 0 ? '#00ff88' : '#0099ff'); p.noStroke();
+                p.ellipse(px, py, 10, 10);
+                p.fill(200); p.noStroke(); p.textSize(10);
+                p.text("Breakpoint Curve (Cl2:N)", gx + 10, gy + 15);
+            }
+
+            class Pathogen {
+                constructor(p) { this.reset(p); }
+                reset(p) {
+                    this.col = 0;
+                    this.y = p.height * 0.1 + p.random(10, 40);
+                    this.x = p.width * 0.1 + 10;
+                    this.dir = 1;
+                    this.alive = true;
+                    this.progress = 0;
+                }
+                update(p) {
+                    const speed = 2 + (1 - state.baff) * 4;
+                    const w = p.width * 0.8;
+                    const h = p.height * 0.5;
+                    const x0 = p.width * 0.1;
+                    const y0 = p.height * 0.1;
+                    const colW = w / 6;
+
+                    // Move through serpentine
+                    this.y += this.dir * speed;
+                    
+                    if(this.dir > 0 && this.y > y0 + h - 15) {
+                        this.col++; this.dir = -1; this.x += colW/2;
+                    } else if(this.dir < 0 && this.y < y0 + 15) {
+                        this.col++; this.dir = 1; this.x += colW/2;
+                    }
+
+                    this.progress = (this.col * h + (this.dir > 0 ? this.y - y0 : (y0+h) - this.y)) / (6 * h);
+                    
+                    // Disinfection Logic (Requires FREE CHLORINE)
+                    // If stuck in combined zone (Breakpoint not reached), kill rate is very low
+                    const efficacy = state.species.free > 0 ? 1.0 : 0.05;
+                    
+                    if(this.alive && p.random() < (state.ctAch * efficacy / 500)) {
+                        if(this.progress > 0.2) this.alive = false;
+                    }
+
+                    if(this.col >= 6) this.reset(p);
+
+                    // Draw
+                    p.fill(this.alive ? p.color(255, 50, 50) : p.color(100, 100, 100, 100));
+                    p.noStroke();
+                    p.ellipse(this.x, this.y, 4);
+                }
+            }
+
+            function updateUI() {
+                p.select('#val-ct-ach').html(`${state.ctAch.toFixed(1)} mg·min/L`);
+                p.select('#val-ct-req').html(`${state.ctReq.toFixed(1)} mg·min/L`);
+                p.select('#val-res').html(`${state.residual.toFixed(2)} mg/L`);
+                p.select('#val-t10').html(`${state.t10.toFixed(1)} min`);
+                
+                if(state.ctAch < state.ctReq) p.select('#val-ct-ach').addClass('fail');
+                else p.select('#val-ct-ach').removeClass('fail');
+            }
+
+            function checkAlarms() {
+                const alarm = p.select('#alarm');
+                if (state.ctAch < state.ctReq) {
+                    alarm.html("! CRITICAL: CT FAILURE — LOG INACTIVATION COMPROMISED");
+                    alarm.style('display', 'block');
+                } else if (state.amm > 0 && state.species.free <= 0) {
+                     alarm.html("! WARNING: COMBINED CHLORINE ONLY — BREAKPOINT NOT REACHED");
+                     alarm.style('display', 'block');
+                } else {
+                    alarm.style('display', 'none');
+                }
+            }
+        });
+
+        // --- DOM EVENT LISTENERS ---
+        document.getElementById('slider-dose').addEventListener('input', (e) => {
+            state.dose = parseFloat(e.target.value);
+            document.getElementById('readout-dose').innerText = state.dose.toFixed(1);
+        });
+        document.getElementById('slider-vol').addEventListener('input', (e) => {
+            state.volPercent = parseInt(e.target.value);
+            document.getElementById('readout-vol').innerText = state.volPercent;
+        });
+        document.getElementById('slider-temp').addEventListener('input', (e) => {
+            state.temp = parseInt(e.target.value);
+            document.getElementById('readout-temp').innerText = state.temp;
+        });
+        document.getElementById('slider-ph').addEventListener('input', (e) => {
+            state.ph = parseFloat(e.target.value);
+            document.getElementById('readout-ph').innerText = state.ph.toFixed(1);
+        });
+        document.getElementById('slider-baff').addEventListener('input', (e) => {
+            state.baff = parseFloat(e.target.value);
+            document.getElementById('readout-baff').innerText = state.baff.toFixed(1);
+        });
+        // Dynamically added listener
+        const ammSlider = document.getElementById('slider-amm');
+        if(ammSlider) ammSlider.addEventListener('input', (e) => {
+             state.amm = parseFloat(e.target.value);
+             document.getElementById('readout-amm').innerText = state.amm.toFixed(1);
+        });
+    </script>
+</body>
+</html>

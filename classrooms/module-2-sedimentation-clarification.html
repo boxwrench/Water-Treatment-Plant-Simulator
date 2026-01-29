@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Treatment Classroom — Module 2: Sedimentation & Clarification</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #1a1a2e;
+            color: #e8e8e8;
+            overflow-x: hidden;
+        }
+        .header {
+            background-color: #16213e;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #00ff88;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        .header p {
+            color: #888888;
+            font-size: 14px;
+        }
+        .main-container {
+            display: flex;
+            height: calc(100vh - 140px);
+        }
+        .left-panel {
+            width: 40%;
+            background-color: #16213e;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid #00ff88;
+        }
+        .right-panel {
+            width: 60%;
+            background-color: #1a1a2e;
+            position: relative;
+        }
+        .control-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #1a1a2e;
+            border-radius: 8px;
+        }
+        .control-section h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        .slider-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #00ff88;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #0f3460;
+            outline: none;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            background-color: #0f3460;
+            color: #e8e8e8;
+            border: 1px solid #00ff88;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .status-indicator {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 8px 0;
+            font-size: 13px;
+            border-left: 4px solid;
+        }
+        .status-good {
+            background-color: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+        .status-warning {
+            background-color: rgba(255, 170, 0, 0.1);
+            border-color: #ffaa00;
+        }
+        .status-danger {
+            background-color: rgba(255, 68, 68, 0.1);
+            border-color: #ff4444;
+        }
+        .metric-display {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #0f3460;
+            border-radius: 5px;
+        }
+        .metric-label {
+            color: #888888;
+        }
+        .metric-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #e8e8e8;
+            font-weight: bold;
+        }
+        .reset-button {
+            width: 100%;
+            padding: 15px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .reset-button:hover {
+            background-color: #cc0000;
+        }
+        .footer {
+            background-color: #16213e;
+            padding: 15px 20px;
+            border-top: 2px solid #00ff88;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .analogy-box {
+            flex: 1;
+            padding: 10px;
+            background-color: rgba(0, 255, 136, 0.1);
+            border-left: 4px solid #00ff88;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .learn-more {
+            margin-left: 20px;
+            padding: 10px 20px;
+            background-color: #00ff88;
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .learn-more:hover {
+            background-color: #00cc6f;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #00ff88;
+            margin-left: 5px;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 280px;
+            background-color: #16213e;
+            color: #e8e8e8;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid #00ff88;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        #visualization {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MODULE 2: SEDIMENTATION & CLARIFICATION</h1>
+        <p>Understanding Surface Overflow Rate, Particle Settling, and Temperature Effects</p>
+    </div>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="control-section">
+                <h3>Basin Hydraulics</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Flow Rate (MGD) <span class="tooltip">?<span class="tooltiptext">How fast water moves through the basin. Higher flow = less time to settle = particles escape over the weir. This is your enemy.</span></span></span>
+                        <span class="slider-value" id="flowValue">2.0</span>
+                    </div>
+                    <input type="range" id="flowRate" min="0.5" max="10" value="2.0" step="0.1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Basin Depth (ft) <span class="tooltip">?<span class="tooltiptext">Deeper = more time for particles to fall, but also farther to travel. SURFACE AREA matters way more than depth for settling. Don't confuse 'big tank' with 'effective tank'.</span></span></span>
+                        <span class="slider-value" id="depthValue">12</span>
+                    </div>
+                    <input type="range" id="depth" min="8" max="16" value="12" step="1">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Environmental</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Temperature (°C) <span class="tooltip">?<span class="tooltiptext">Cold water is thicker (higher viscosity) — particles settle slower. Winter kills settling efficiency.</span></span></span>
+                        <span class="slider-value" id="tempValue">15</span>
+                    </div>
+                    <input type="range" id="temperature" min="1" max="30" value="15" step="1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Wind Speed (mph) <span class="tooltip">?<span class="tooltiptext">Wind on open basins creates currents that stir up the water and disrupt settling. Baffles help, but can't stop wind.</span></span></span>
+                        <span class="slider-value" id="windValue">0</span>
+                    </div>
+                    <input type="range" id="wind" min="0" max="20" value="0" step="1">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Influent</h3>
+                <div class="slider-group">
+                    <label>Particle Type <span class="tooltip">?<span class="tooltiptext">How well the upstream coag/floc worked. Pin floc = tiny, won't settle. Macro floc = big, settles great. Garbage in, garbage out.</span></span></label>
+                    <select id="particleType">
+                        <option value="pin">Pin Floc (poor coag)</option>
+                        <option value="normal" selected>Normal Floc</option>
+                        <option value="macro">Macro Floc (excellent coag)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Calculated Metrics</h3>
+                <div class="metric-display">
+                    <span class="metric-label">Surface Overflow Rate:</span>
+                    <span class="metric-value" id="sorValue">1.2 gpm/ft²</span>
+                </div>
+                <div class="metric-display">
+                    <span class="metric-label">Detention Time:</span>
+                    <span class="metric-value" id="detentionValue">3.2 hrs</span>
+                </div>
+                <div class="metric-display">
+                    <span class="metric-label">Removal Efficiency:</span>
+                    <span class="metric-value" id="removalValue">78%</span>
+                </div>
+                <div id="statusMessage" class="status-indicator status-good">
+                    ✓ Good settling performance
+                </div>
+            </div>
+
+            <button class="reset-button" onclick="resetSimulation()">RESET SIMULATION</button>
+        </div>
+
+        <div class="right-panel">
+            <div id="visualization"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="analogy-box">
+            💡 <strong>Analogy:</strong> Imagine you're panning for gold in a stream. If the water rushes too fast, even heavy gold nuggets get swept away before they can sink to the bottom. If the water is calm and slow, gold has time to drop. Now imagine panning in cold honey instead of water — everything sinks way slower because honey is thick. That's cold water in winter.
+        </div>
+        <a href="https://www.epa.gov/dwreginfo/sedimentation-water-treatment" target="_blank" class="learn-more">📚 Learn More</a>
+    </div>
+
+    <script>
+// ═══════════════════════════════════════════════════════════
+// MODULE: SEDIMENTATION & CLARIFICATION
+// DOMAIN: Sedimentation
+// VERSION: 1.0
+// ═══════════════════════════════════════════════════════════
+
+// --- CONFIGURATION ---
+const CONFIG = {
+    canvasWidth: window.innerWidth * 0.6,
+    canvasHeight: window.innerHeight - 140,
+    basinArea: 10000, // ft²
+    particleSpawnRate: 3, // per frame
+};
+
+// --- STATE ---
+let state = {
+    flowRate: 2.0, // MGD
+    depth: 12, // ft
+    temperature: 15, // °C
+    wind: 0, // mph
+    particleType: 'normal',
+    particles: [],
+    settled: 0,
+    carryover: 0,
+};
+
+// --- PHYSICS ENGINE ---
+function calculateViscosity(tempC) {
+    const exponent = 247.8 / (tempC + 133.15);
+    return 0.00002414 * Math.pow(10, exponent);
+}
+
+function calculateSettlingVelocity(diameter, density, tempC) {
+    // Stokes' Law: Vs = g(ρp - ρw)d² / 18μ
+    const g = 9.81; // m/s²
+    const rhoP = density; // kg/m³
+    const rhoW = 1000; // kg/m³
+    const d = diameter; // m
+    const mu = calculateViscosity(tempC);
+
+    const vs = (g * (rhoP - rhoW) * d * d) / (18 * mu);
+    return vs * 3600; // convert to m/hr
+}
+
+function getParticleProperties(type) {
+    // Returns {diameter (m), density (kg/m³), color}
+    switch(type) {
+        case 'pin':
+            return {diameter: 20e-6, density: 1020, color: [255, 100, 100]};
+        case 'normal':
+            return {diameter: 100e-6, density: 1050, color: [0, 255, 136]};
+        case 'macro':
+            return {diameter: 300e-6, density: 1100, color: [255, 200, 0]};
+        default:
+            return {diameter: 100e-6, density: 1050, color: [0, 255, 136]};
+    }
+}
+
+function calculateSOR() {
+    // SOR = Q / A (gpm/ft²)
+    const Q_gpm = state.flowRate * 694.44; // Convert MGD to gpm
+    return Q_gpm / CONFIG.basinArea;
+}
+
+function calculateDetentionTime() {
+    // t = V / Q (hours)
+    const volume_gal = CONFIG.basinArea * state.depth * 7.48; // cubic feet to gallons
+    const Q_gpm = state.flowRate * 694.44;
+    return (volume_gal / Q_gpm) / 60; // Convert minutes to hours
+}
+
+function calculateRemovalEfficiency() {
+    const total = state.settled + state.carryover;
+    if (total === 0) return 0;
+    return (state.settled / total) * 100;
+}
+
+function calculateStatus() {
+    const sor = calculateSOR();
+    const removal = calculateRemovalEfficiency();
+
+    if (sor > 2.0 && state.particleType === 'pin') {
+        return { type: 'danger', message: '⚠ HIGH CARRYOVER - Reduce flow or improve upstream coag' };
+    }
+    if (state.temperature < 5) {
+        return { type: 'warning', message: '⚠ COLD WATER IMPACT - Expect lower removal efficiency' };
+    }
+    if (state.wind > 15) {
+        return { type: 'warning', message: '⚠ WIND DISRUPTION - Consider covers or baffles' };
+    }
+    if (state.wind > 5 && state.wind <= 15) {
+        return { type: 'warning', message: '⚠ MINOR WIND EFFECT - Slight reduction in efficiency' };
+    }
+    if (sor < 1.5 && removal > 85) {
+        return { type: 'good', message: '✓ OPTIMAL PERFORMANCE - Excellent settling conditions' };
+    }
+    if (removal > 70) {
+        return { type: 'good', message: '✓ Good settling performance' };
+    }
+
+    return { type: 'warning', message: '○ Suboptimal settling conditions' };
+}
+
+function updateUI() {
+    document.getElementById('flowValue').textContent = state.flowRate.toFixed(1);
+    document.getElementById('depthValue').textContent = state.depth;
+    document.getElementById('tempValue').textContent = state.temperature;
+    document.getElementById('windValue').textContent = state.wind;
+
+    const sor = calculateSOR();
+    const detention = calculateDetentionTime();
+    const removal = calculateRemovalEfficiency();
+
+    document.getElementById('sorValue').textContent = sor.toFixed(2) + ' gpm/ft²';
+    document.getElementById('detentionValue').textContent = detention.toFixed(1) + ' hrs';
+    document.getElementById('removalValue').textContent = removal.toFixed(0) + '%';
+
+    const status = calculateStatus();
+    const statusDiv = document.getElementById('statusMessage');
+    statusDiv.textContent = status.message;
+    statusDiv.className = 'status-indicator status-' + status.type;
+}
+
+// --- P5.JS SKETCH ---
+let sketch = function(p) {
+    const basinLeft = 50;
+    const basinRight = CONFIG.canvasWidth - 50;
+    const basinTop = 100;
+    const basinBottom = CONFIG.canvasHeight - 100;
+    const basinWidth = basinRight - basinLeft;
+    const basinHeight = basinBottom - basinTop;
+
+    p.setup = function() {
+        const canvas = p.createCanvas(CONFIG.canvasWidth, CONFIG.canvasHeight);
+        canvas.parent('visualization');
+    };
+
+    p.draw = function() {
+        p.background(26, 26, 46);
+
+        // Draw basin outline
+        p.stroke(0, 255, 136);
+        p.strokeWeight(2);
+        p.noFill();
+        p.rect(basinLeft, basinTop, basinWidth, basinHeight);
+
+        // Draw sludge layer
+        const sludgeHeight = 30;
+        p.fill(100, 80, 60);
+        p.noStroke();
+        p.rect(basinLeft, basinBottom - sludgeHeight, basinWidth, sludgeHeight);
+
+        // Draw inlet/outlet labels
+        p.fill(232, 232, 232);
+        p.textSize(12);
+        p.text('INLET →', basinLeft - 45, basinTop + 20);
+        p.text('← WEIR', basinRight + 10, basinTop + 20);
+        p.text('Sludge Layer', basinLeft + 10, basinBottom - 10);
+
+        // Spawn particles
+        if (p.frameCount % 10 === 0) {
+            for (let i = 0; i < CONFIG.particleSpawnRate; i++) {
+                const props = getParticleProperties(state.particleType);
+                state.particles.push({
+                    x: basinLeft + 10,
+                    y: p.random(basinTop + 10, basinTop + basinHeight * 0.3),
+                    diameter: props.diameter,
+                    density: props.density,
+                    color: props.color,
+                    settled: false,
+                    exited: false,
+                });
+            }
+        }
+
+        // Calculate settling velocity for current conditions
+        const props = getParticleProperties(state.particleType);
+        const vs_mhr = calculateSettlingVelocity(props.diameter, props.density, state.temperature);
+        const vs_pixels_per_frame = (vs_mhr / 3600) * (basinHeight / (state.depth * 0.3048)) / 60; // Convert to pixels/frame
+
+        // Calculate horizontal velocity based on flow rate
+        const detentionTime_sec = calculateDetentionTime() * 3600;
+        const horizontal_velocity = basinWidth / (detentionTime_sec / 60); // pixels per frame
+
+        // Wind effect (adds vertical disturbance)
+        const windEffect = state.wind > 0 ? state.wind * 0.05 : 0;
+
+        // Update and draw particles
+        for (let i = state.particles.length - 1; i >= 0; i--) {
+            const particle = state.particles[i];
+
+            if (!particle.settled && !particle.exited) {
+                // Move horizontally
+                particle.x += horizontal_velocity;
+
+                // Settle vertically
+                particle.y += vs_pixels_per_frame;
+
+                // Wind disturbance
+                if (state.wind > 5) {
+                    particle.y += p.random(-windEffect, windEffect);
+                }
+
+                // Check if settled
+                if (particle.y >= basinBottom - sludgeHeight) {
+                    particle.settled = true;
+                    state.settled++;
+                }
+
+                // Check if carried over
+                if (particle.x >= basinRight) {
+                    particle.exited = true;
+                    if (!particle.settled) {
+                        state.carryover++;
+                    }
+                }
+
+                // Draw particle
+                p.fill(particle.color[0], particle.color[1], particle.color[2]);
+                p.noStroke();
+                const displaySize = p.map(props.diameter, 20e-6, 300e-6, 2, 6);
+                p.circle(particle.x, particle.y, displaySize);
+
+                // Draw settling trajectory line
+                p.stroke(particle.color[0], particle.color[1], particle.color[2], 50);
+                p.strokeWeight(1);
+                p.line(particle.x, particle.y, particle.x - 20, particle.y - 20);
+            }
+
+            // Remove particles that have exited
+            if (particle.exited) {
+                state.particles.splice(i, 1);
+            }
+        }
+
+        // Draw legend
+        p.noStroke();
+        p.fill(232, 232, 232);
+        p.textSize(11);
+        p.text('Particle Color: Red = Pin Floc | Green = Normal | Yellow = Macro', 20, 30);
+        p.text('Particles reaching bottom = REMOVED | Reaching weir = CARRYOVER', 20, 50);
+
+        // Update UI
+        if (p.frameCount % 30 === 0) {
+            updateUI();
+        }
+    };
+};
+
+new p5(sketch);
+
+// --- UI HANDLERS ---
+document.getElementById('flowRate').addEventListener('input', (e) => {
+    state.flowRate = parseFloat(e.target.value);
+    updateUI();
+});
+
+document.getElementById('depth').addEventListener('input', (e) => {
+    state.depth = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('temperature').addEventListener('input', (e) => {
+    state.temperature = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('wind').addEventListener('input', (e) => {
+    state.wind = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('particleType').addEventListener('change', (e) => {
+    state.particleType = e.target.value;
+    updateUI();
+});
+
+function resetSimulation() {
+    state.flowRate = 2.0;
+    state.depth = 12;
+    state.temperature = 15;
+    state.wind = 0;
+    state.particleType = 'normal';
+    state.particles = [];
+    state.settled = 0;
+    state.carryover = 0;
+
+    document.getElementById('flowRate').value = 2.0;
+    document.getElementById('depth').value = 12;
+    document.getElementById('temperature').value = 15;
+    document.getElementById('wind').value = 0;
+    document.getElementById('particleType').value = 'normal';
+
+    updateUI();
+}
+
+// Initial UI update
+updateUI();
+    </script>
+</body>
+</html>

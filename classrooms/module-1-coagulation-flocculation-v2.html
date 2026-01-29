@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Treatment Classroom — Module 1: Coagulation & Jar Testing (v2.0)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #1a1a2e;
+            color: #e8e8e8;
+            overflow-x: hidden;
+        }
+        .header {
+            background-color: #16213e;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid #00ff88;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            color: #00ff88;
+        }
+        .header .plant-info {
+            color: #888888;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .header .plant-info strong {
+            color: #00ff88;
+        }
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+            padding: 20px;
+            height: calc(100vh - 200px);
+        }
+        .jar-test-section {
+            grid-column: 1 / 2;
+            grid-row: 1 / 3;
+            background-color: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #00ff88;
+        }
+        .chemical-feed-section {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+            background-color: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #00ff88;
+        }
+        .monitoring-section {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+            background-color: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #00ff88;
+        }
+        .section-title {
+            color: #00ff88;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #0f3460;
+            padding-bottom: 10px;
+        }
+        .jar-test-bench {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .jar {
+            background: linear-gradient(to bottom, #0f3460 0%, #1a1a2e 100%);
+            border: 2px solid #00ff88;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+        }
+        .jar.selected {
+            border-color: #ffaa00;
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.5);
+        }
+        .jar-label {
+            font-size: 12px;
+            color: #888888;
+            margin-bottom: 8px;
+        }
+        .jar-dose {
+            font-family: 'Consolas', monospace;
+            font-size: 16px;
+            color: #00ff88;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .beaker {
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(100,150,200,0.3) 100%);
+            border: 3px solid #444;
+            border-radius: 0 0 15px 15px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .water {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 85%;
+            transition: all 0.5s ease;
+        }
+        .floc-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: settle 3s ease-in infinite;
+        }
+        @keyframes settle {
+            0% { top: 0%; opacity: 0.8; }
+            100% { top: 90%; opacity: 0.3; }
+        }
+        .jar-result {
+            font-size: 11px;
+            padding: 5px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .result-poor { background-color: rgba(255, 68, 68, 0.2); color: #ff4444; }
+        .result-fair { background-color: rgba(255, 170, 0, 0.2); color: #ffaa00; }
+        .result-good { background-color: rgba(0, 255, 136, 0.2); color: #00ff88; }
+        .result-excellent { background-color: rgba(0, 255, 136, 0.3); color: #00ff88; }
+        .result-overdose { background-color: rgba(255, 68, 68, 0.2); color: #ff4444; }
+
+        .control-group {
+            background-color: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .control-label {
+            color: #888888;
+            font-size: 13px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .control-value {
+            font-family: 'Consolas', monospace;
+            color: #00ff88;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: #1a1a2e;
+            outline: none;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        .calculation-display {
+            background-color: #1a1a2e;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 4px solid #00ff88;
+        }
+        .calc-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 13px;
+        }
+        .calc-label {
+            color: #888888;
+        }
+        .calc-value {
+            font-family: 'Consolas', monospace;
+            color: #e8e8e8;
+            font-weight: bold;
+        }
+        .pump-setting {
+            background-color: #00ff88;
+            color: #1a1a2e;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .meter {
+            background-color: #0f3460;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .meter-label {
+            color: #888888;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        .meter-value {
+            font-family: 'Consolas', monospace;
+            font-size: 36px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        .meter-unit {
+            font-size: 16px;
+            color: #888888;
+            margin-left: 5px;
+        }
+        .meter.warning .meter-value {
+            color: #ffaa00;
+        }
+        .meter.danger .meter-value {
+            color: #ff4444;
+        }
+        .performance-indicator {
+            background-color: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .perf-label {
+            color: #888888;
+            font-size: 13px;
+        }
+        .perf-bar {
+            flex: 1;
+            height: 20px;
+            background-color: #1a1a2e;
+            border-radius: 10px;
+            margin: 0 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        .perf-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ffaa00, #00ff88);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+        .perf-value {
+            font-family: 'Consolas', monospace;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        .scenario-button {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        .scenario-button:hover {
+            background-color: #cc0000;
+        }
+        .scenario-button.active {
+            background-color: #ffaa00;
+        }
+        .instructions {
+            background-color: rgba(0, 255, 136, 0.1);
+            border-left: 4px solid #00ff88;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .footer {
+            background-color: #16213e;
+            padding: 15px 20px;
+            border-top: 3px solid #00ff88;
+            text-align: center;
+            font-size: 13px;
+            color: #888888;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #00ff88;
+            margin-left: 5px;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: #16213e;
+            color: #e8e8e8;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid #00ff88;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MODULE 1: COAGULATION & JAR TESTING</h1>
+        <div class="plant-info">
+            <strong>100 MGD Regional Water Treatment Plant</strong> | Raw Water Source: Surface Water Reservoir
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- JAR TEST SECTION -->
+        <div class="jar-test-section">
+            <div class="section-title">🧪 Virtual Jar Test Bench</div>
+
+            <div class="instructions">
+                <strong>Operator Instructions:</strong> Run jar tests to find optimal coagulant dose. Each jar shows a different alum dose. Watch for good floc formation (visible particles settling) and clear supernatant. Pin floc (tiny particles) = underdose. Milky water = overdose.
+            </div>
+
+            <div class="jar-test-bench">
+                <div class="jar" id="jar1">
+                    <div class="jar-label">JAR #1</div>
+                    <div class="jar-dose">5 mg/L</div>
+                    <div class="beaker">
+                        <div class="water" id="water1"></div>
+                        <div class="floc-particles" id="floc1"></div>
+                    </div>
+                    <div class="jar-result result-poor" id="result1">POOR: Underdose</div>
+                </div>
+
+                <div class="jar" id="jar2">
+                    <div class="jar-label">JAR #2</div>
+                    <div class="jar-dose">10 mg/L</div>
+                    <div class="beaker">
+                        <div class="water" id="water2"></div>
+                        <div class="floc-particles" id="floc2"></div>
+                    </div>
+                    <div class="jar-result result-fair" id="result2">FAIR: Low dose</div>
+                </div>
+
+                <div class="jar selected" id="jar3">
+                    <div class="jar-label">JAR #3 ⭐</div>
+                    <div class="jar-dose">15 mg/L</div>
+                    <div class="beaker">
+                        <div class="water" id="water3"></div>
+                        <div class="floc-particles" id="floc3"></div>
+                    </div>
+                    <div class="jar-result result-excellent" id="result3">EXCELLENT</div>
+                </div>
+
+                <div class="jar" id="jar4">
+                    <div class="jar-label">JAR #4</div>
+                    <div class="jar-dose">20 mg/L</div>
+                    <div class="beaker">
+                        <div class="water" id="water4"></div>
+                        <div class="floc-particles" id="floc4"></div>
+                    </div>
+                    <div class="jar-result result-good" id="result4">GOOD</div>
+                </div>
+
+                <div class="jar" id="jar5">
+                    <div class="jar-label">JAR #5</div>
+                    <div class="jar-dose">30 mg/L</div>
+                    <div class="beaker">
+                        <div class="water" id="water5"></div>
+                        <div class="floc-particles" id="floc5"></div>
+                    </div>
+                    <div class="jar-result result-fair" id="result5">FAIR: High dose</div>
+                </div>
+
+                <div class="jar" id="jar6">
+                    <div class="jar-label">JAR #6</div>
+                    <div class="jar-dose">45 mg/L</div>
+                    <div class="beaker">
+                        <div class="water" id="water6"></div>
+                        <div class="floc-particles" id="floc6"></div>
+                    </div>
+                    <div class="jar-result result-overdose" id="result6">OVERDOSE: Pin floc</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHEMICAL FEED SECTION -->
+        <div class="chemical-feed-section">
+            <div class="section-title">💊 Chemical Feed Calculator</div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Plant Flow Rate <span class="tooltip">?<span class="tooltiptext">Total plant flow in million gallons per day. This is read from the main plant flow meter.</span></span></span>
+                    <span class="control-value" id="flowDisplay">100 MGD</span>
+                </div>
+                <input type="range" id="flowRate" min="80" max="120" value="100" step="1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Target Alum Dose <span class="tooltip">?<span class="tooltiptext">Based on jar test results. Typical range 10-25 mg/L for surface water. Adjust based on raw water turbidity.</span></span></span>
+                    <span class="control-value"><span id="doseDisplay">15</span> mg/L</span>
+                </div>
+                <input type="range" id="targetDose" min="5" max="45" value="15" step="1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Alum Concentration (as delivered)</span>
+                    <span class="control-value">10% (typical)</span>
+                </div>
+            </div>
+
+            <div class="calculation-display">
+                <div class="calc-row">
+                    <span class="calc-label">Water to treat per day:</span>
+                    <span class="calc-value"><span id="calcGallons">100,000,000</span> gallons</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">Alum needed (100% basis):</span>
+                    <span class="calc-value"><span id="calcAlumPure">1,250</span> lbs/day</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">Alum solution (10%):</span>
+                    <span class="calc-value"><span id="calcAlumSolution">1,501</span> gallons/day</span>
+                </div>
+                <div class="calc-row">
+                    <span class="calc-label">Feed rate:</span>
+                    <span class="calc-value"><span id="calcFeedRate">62.5</span> GPH (gallons per hour)</span>
+                </div>
+            </div>
+
+            <div class="pump-setting">
+                🔧 SET PUMP STROKE TO: <span id="pumpStroke">68</span>%
+            </div>
+
+            <button class="scenario-button" id="stormButton" onclick="toggleStorm()">
+                ⚠️ SIMULATE STORM EVENT (Turbidity Spike)
+            </button>
+        </div>
+
+        <!-- MONITORING SECTION -->
+        <div class="monitoring-section">
+            <div class="section-title">📊 Process Monitoring</div>
+
+            <div class="meter" id="rawMeter">
+                <div class="meter-label">Raw Water Turbidity</div>
+                <div class="meter-value">
+                    <span id="rawTurbidity">25</span><span class="meter-unit">NTU</span>
+                </div>
+            </div>
+
+            <div class="meter" id="settledMeter">
+                <div class="meter-label">Settled Water Turbidity</div>
+                <div class="meter-value">
+                    <span id="settledTurbidity">2.5</span><span class="meter-unit">NTU</span>
+                </div>
+            </div>
+
+            <div class="performance-indicator">
+                <div class="perf-label">Coagulation Effectiveness:</div>
+                <div class="perf-bar">
+                    <div class="perf-fill" id="perfBar" style="width: 90%;"></div>
+                </div>
+                <div class="perf-value"><span id="perfValue">90</span>%</div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Water Temperature</span>
+                    <span class="control-value"><span id="tempDisplay">15</span>°C</span>
+                </div>
+                <input type="range" id="waterTemp" min="5" max="25" value="15" step="1">
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        💡 <strong>Operator Tip:</strong> At 100 MGD, every 1 mg/L dose change = 83 lbs/day alum change. Storm events require rapid dose adjustments. Under-dosing creates pin floc that won't settle. Over-dosing reverses the charge and particles won't stick. Target: clear water with visible floc settling in jar test.
+    </div>
+
+    <script>
+// ═══════════════════════════════════════════════════════════
+// MODULE 1 V2.0: COAGULATION - JAR TEST & CHEMICAL DOSING
+// 100 MGD REGIONAL PLANT
+// ═══════════════════════════════════════════════════════════
+
+let state = {
+    flowRate: 100, // MGD
+    targetDose: 15, // mg/L
+    rawTurbidity: 25, // NTU
+    waterTemp: 15, // °C
+    stormActive: false
+};
+
+// Jar test configurations (dose vs performance)
+const jarTests = [
+    { dose: 5, turbidity: 18, clarity: 25, result: 'POOR: Underdose', class: 'result-poor' },
+    { dose: 10, turbidity: 8, clarity: 55, result: 'FAIR: Low dose', class: 'result-fair' },
+    { dose: 15, turbidity: 2.5, clarity: 90, result: 'EXCELLENT', class: 'result-excellent' },
+    { dose: 20, turbidity: 2.8, clarity: 88, result: 'GOOD', class: 'result-good' },
+    { dose: 30, turbidity: 5, clarity: 70, result: 'FAIR: High dose', class: 'result-fair' },
+    { dose: 45, turbidity: 12, clarity: 40, result: 'OVERDOSE: Pin floc', class: 'result-overdose' }
+];
+
+function updateJarTests() {
+    const rawTurb = state.rawTurbidity;
+
+    jarTests.forEach((jar, index) => {
+        const jarNum = index + 1;
+
+        // Calculate settled turbidity based on dose effectiveness
+        let settledTurb;
+        if (rawTurb <= 30) {
+            // Normal conditions - use jar test data
+            settledTurb = jar.turbidity;
+        } else {
+            // Storm conditions - need higher doses
+            const doseFactor = jar.dose / 15; // 15 is optimal for 25 NTU
+            const turbFactor = rawTurb / 25;
+            settledTurb = rawTurb * (1 - (jar.clarity / 100)) * (1 / doseFactor) * turbFactor;
+        }
+
+        // Update water color based on turbidity
+        const clarity = Math.max(0, 100 - (settledTurb / rawTurb * 100));
+        const waterColor = getTurbidityColor(settledTurb, clarity);
+        document.getElementById(`water${jarNum}`).style.background = waterColor;
+
+        // Update floc particles
+        updateFlocParticles(jarNum, jar.dose, settledTurb);
+
+        // Update result
+        let result, resultClass;
+        if (rawTurb > 100) {
+            // Storm event - different thresholds
+            if (jar.dose < 20) {
+                result = 'POOR: Underdose for storm';
+                resultClass = 'result-poor';
+            } else if (jar.dose >= 20 && jar.dose <= 35) {
+                result = 'GOOD for storm';
+                resultClass = 'result-good';
+            } else {
+                result = 'OVERDOSE';
+                resultClass = 'result-overdose';
+            }
+        } else {
+            result = jar.result;
+            resultClass = jar.class;
+        }
+
+        document.getElementById(`result${jarNum}`).textContent = result;
+        document.getElementById(`result${jarNum}`).className = `jar-result ${resultClass}`;
+    });
+
+    // Highlight optimal jar
+    for (let i = 1; i <= 6; i++) {
+        document.getElementById(`jar${i}`).classList.remove('selected');
+    }
+    const optimalJar = findOptimalJar();
+    document.getElementById(`jar${optimalJar}`).classList.add('selected');
+}
+
+function getTurbidityColor(turbidity, clarity) {
+    // Color gradient from brown (turbid) to blue (clear)
+    const brown = { r: 139, g: 90, b: 43 };
+    const blue = { r: 100, g: 150, b: 200 };
+
+    const t = Math.max(0, Math.min(1, clarity / 100));
+    const r = Math.round(brown.r + (blue.r - brown.r) * t);
+    const g = Math.round(brown.g + (blue.g - brown.g) * t);
+    const b = Math.round(brown.b + (blue.b - brown.b) * t);
+
+    return `linear-gradient(to bottom,
+        rgba(${r}, ${g}, ${b}, 0.3) 0%,
+        rgba(${r}, ${g}, ${b}, 0.7) 50%,
+        rgba(${r}, ${g}, ${b}, 0.9) 100%)`;
+}
+
+function updateFlocParticles(jarNum, dose, turbidity) {
+    const container = document.getElementById(`floc${jarNum}`);
+    container.innerHTML = '';
+
+    // Determine particle characteristics based on dose
+    let particleCount, particleSize, particleColor;
+
+    if (dose < 10) {
+        // Underdose - many small particles (pin floc)
+        particleCount = 30;
+        particleSize = 3;
+        particleColor = 'rgba(200, 150, 100, 0.6)';
+    } else if (dose >= 10 && dose <= 25) {
+        // Good dose - medium particles settling
+        particleCount = 15;
+        particleSize = 6;
+        particleColor = 'rgba(139, 90, 43, 0.7)';
+    } else {
+        // Overdose - small particles (charge reversal)
+        particleCount = 25;
+        particleSize = 4;
+        particleColor = 'rgba(180, 140, 100, 0.5)';
+    }
+
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.width = `${particleSize}px`;
+        particle.style.height = `${particleSize}px`;
+        particle.style.backgroundColor = particleColor;
+        particle.style.left = `${Math.random() * 90 + 5}%`;
+        particle.style.animationDelay = `${Math.random() * 3}s`;
+        particle.style.animationDuration = `${3 + Math.random() * 2}s`;
+        container.appendChild(particle);
+    }
+}
+
+function findOptimalJar() {
+    const rawTurb = state.rawTurbidity;
+    if (rawTurb <= 30) return 3; // 15 mg/L
+    if (rawTurb <= 60) return 4; // 20 mg/L
+    if (rawTurb <= 100) return 5; // 30 mg/L
+    return 5; // 30 mg/L for very high turbidity
+}
+
+function calculateChemicalFeed() {
+    const flow = state.flowRate; // MGD
+    const dose = state.targetDose; // mg/L
+
+    // Conversions
+    const gallonsPerDay = flow * 1000000;
+    const alumPureLbs = flow * dose * 8.34; // 8.34 lbs/gal conversion factor
+    const alumSolutionGal = alumPureLbs / (0.10 * 8.34 * 1.33); // 10% solution, SG=1.33
+    const feedRateGPH = alumSolutionGal / 24;
+
+    // Pump stroke (simplified - assumes pump max capacity = 150 GPH)
+    const pumpStroke = Math.round((feedRateGPH / 150) * 100);
+
+    // Update displays
+    document.getElementById('calcGallons').textContent = gallonsPerDay.toLocaleString();
+    document.getElementById('calcAlumPure').textContent = Math.round(alumPureLbs).toLocaleString();
+    document.getElementById('calcAlumSolution').textContent = Math.round(alumSolutionGal).toLocaleString();
+    document.getElementById('calcFeedRate').textContent = feedRateGPH.toFixed(1);
+    document.getElementById('pumpStroke').textContent = Math.min(100, pumpStroke);
+}
+
+function calculateSettledTurbidity() {
+    const rawTurb = state.rawTurbidity;
+    const dose = state.targetDose;
+    const optimalDose = rawTurb / 5; // Rule of thumb
+
+    // Calculate removal efficiency based on dose accuracy
+    let efficiency;
+    if (dose < optimalDose * 0.5) {
+        efficiency = 50; // Severe underdose
+    } else if (dose < optimalDose * 0.8) {
+        efficiency = 70; // Underdose
+    } else if (dose >= optimalDose * 0.8 && dose <= optimalDose * 1.5) {
+        efficiency = 90; // Good dose range
+    } else if (dose <= optimalDose * 2) {
+        efficiency = 75; // Slight overdose
+    } else {
+        efficiency = 50; // Severe overdose
+    }
+
+    // Temperature effect (cold water reduces efficiency slightly)
+    const tempFactor = 1 - ((15 - state.waterTemp) * 0.01);
+    efficiency *= tempFactor;
+
+    const settledTurb = rawTurb * (1 - efficiency / 100);
+
+    document.getElementById('settledTurbidity').textContent = settledTurb.toFixed(1);
+    document.getElementById('perfValue').textContent = Math.round(efficiency);
+    document.getElementById('perfBar').style.width = efficiency + '%';
+
+    // Update meter colors
+    const rawMeter = document.getElementById('rawMeter');
+    const settledMeter = document.getElementById('settledMeter');
+
+    rawMeter.className = 'meter';
+    if (rawTurb > 100) rawMeter.classList.add('danger');
+    else if (rawTurb > 50) rawMeter.classList.add('warning');
+
+    settledMeter.className = 'meter';
+    if (settledTurb > 5) settledMeter.classList.add('danger');
+    else if (settledTurb > 3) settledMeter.classList.add('warning');
+}
+
+function toggleStorm() {
+    state.stormActive = !state.stormActive;
+    const button = document.getElementById('stormButton');
+
+    if (state.stormActive) {
+        state.rawTurbidity = 150;
+        button.textContent = '✓ STORM ACTIVE - Click to Clear';
+        button.classList.add('active');
+    } else {
+        state.rawTurbidity = 25;
+        button.textContent = '⚠️ SIMULATE STORM EVENT (Turbidity Spike)';
+        button.classList.remove('active');
+    }
+
+    document.getElementById('rawTurbidity').textContent = state.rawTurbidity;
+    updateAll();
+}
+
+function updateAll() {
+    updateJarTests();
+    calculateChemicalFeed();
+    calculateSettledTurbidity();
+}
+
+// Event listeners
+document.getElementById('flowRate').addEventListener('input', (e) => {
+    state.flowRate = parseInt(e.target.value);
+    document.getElementById('flowDisplay').textContent = state.flowRate + ' MGD';
+    updateAll();
+});
+
+document.getElementById('targetDose').addEventListener('input', (e) => {
+    state.targetDose = parseInt(e.target.value);
+    document.getElementById('doseDisplay').textContent = state.targetDose;
+    updateAll();
+});
+
+document.getElementById('waterTemp').addEventListener('input', (e) => {
+    state.waterTemp = parseInt(e.target.value);
+    document.getElementById('tempDisplay').textContent = state.waterTemp;
+    updateAll();
+});
+
+// Initialize
+updateAll();
+    </script>
+</body>
+</html>

@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>100 MGD SCADA — Granular Media Filtration</title>
+    <style>
+        :root {
+            --bg-deep: #0a0e17;
+            --panel-bg: rgba(22, 33, 62, 0.75);
+            --panel-border: rgba(0, 255, 136, 0.3);
+            --glass-blur: 15px;
+            --accent-safe: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff4444;
+            --text-primary: #e8e8e8;
+            --text-secondary: #888888;
+            --data-font: 'Consolas', 'Monaco', monospace;
+            --ui-font: 'Inter', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: var(--ui-font);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        header {
+            background: var(--panel-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border-bottom: 1px solid var(--panel-border);
+            padding: 12px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-safe);
+        }
+
+        .plant-status {
+            font-family: var(--data-font);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            height: calc(100vh - 100px);
+        }
+
+        #controls {
+            width: 380px;
+            background: linear-gradient(180deg, rgba(16, 26, 46, 0.95), rgba(10, 14, 23, 0.95));
+            backdrop-filter: blur(var(--glass-blur));
+            border-right: 1px solid var(--panel-border);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #visualization {
+            flex: 1;
+            position: relative;
+            background: #000;
+        }
+
+        .control-group {
+            margin-bottom: 22px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .data-readout {
+            font-family: var(--data-font);
+            color: var(--accent-safe);
+            font-size: 1rem;
+        }
+
+        input[type=range], select {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 255, 136, 0.1);
+            appearance: none;
+            outline: none;
+        }
+
+        select {
+            height: 30px;
+            background: rgba(16, 26, 46, 0.8);
+            border: 1px solid var(--panel-border);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            padding: 0 10px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-safe);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--accent-safe);
+        }
+
+        .scada-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .scada-card {
+            background: rgba(0, 255, 136, 0.03);
+            border: 1px solid rgba(0, 255, 136, 0.1);
+            padding: 12px;
+            text-align: center;
+            border-radius: 4px;
+        }
+
+        .scada-card label {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .value {
+            font-family: var(--data-font);
+            font-size: 0.95rem;
+            color: var(--accent-safe);
+        }
+
+        #alarm {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            font-family: var(--data-font);
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+            border-radius: 4px;
+            animation: pulse-warn 1.5s infinite;
+        }
+
+        @keyframes pulse-warn {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; box-shadow: 0 0 15px var(--danger); }
+            100% { opacity: 0.8; }
+        }
+
+        .mode-btn {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-safe);
+            color: var(--accent-safe);
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 15px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .mode-btn.backwash {
+            background: rgba(255, 170, 0, 0.1);
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+
+        footer {
+            height: 60px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            border-top: 1px solid var(--panel-border);
+            padding: 0 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analogy {
+            font-size: 0.8rem;
+            color: var(--warning);
+            font-style: italic;
+            max-width: 60%;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--accent-safe);
+            color: var(--accent-safe);
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+
+        .btn:hover { background: var(--accent-safe); color: var(--bg-deep); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Granular Media Filtration — Cell 12</h1>
+        <div class="plant-status">PLANT CAPACITY: 100 MGD | STATUS: ONLINE</div>
+    </header>
+
+    <main>
+        <section id="controls">
+            <button class="mode-btn" id="btn-mode">Currently: FILTERING</button>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Flow Rate (gpm/ft²)</span>
+                    <span class="data-readout" id="readout-rate">3.0</span>
+                </div>
+                <input type="range" id="slider-rate" min="1" max="8" value="3.0" step="0.1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Run Time (hours)</span>
+                    <span class="data-readout" id="readout-runtime">24</span>
+                </div>
+                <input type="range" id="slider-runtime" min="0" max="60" value="24" step="1">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Backwash Flow (gpm/ft²)</span>
+                    <span class="data-readout" id="readout-bw">15.0</span>
+                </div>
+                <input type="range" id="slider-bw" min="10" max="25" value="15.0" step="0.5">
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Temperature (°C)</span>
+                    <span class="data-readout" id="readout-temp">15</span>
+                </div>
+                <input type="range" id="slider-temp" min="1" max="30" value="15" step="1">
+            </div>
+
+            <div class="scada-grid">
+                <div class="scada-card">
+                    <label>Head Loss</label>
+                    <div class="value" id="val-hl">0.8 ft</div>
+                </div>
+                <div class="scada-card">
+                    <label>Effluent Turbidity</label>
+                    <div class="value" id="val-turb">0.05 NTU</div>
+                </div>
+                <div class="scada-card">
+                    <label>Bed Expansion</label>
+                    <div class="value" id="val-exp">0%</div>
+                </div>
+                <div class="scada-card">
+                    <label>Filter Area</label>
+                    <div class="value">827 ft²</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="visualization">
+            <div id="alarm">! CRITICAL: TERMINAL HEAD LOSS REACHED</div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="analogy">
+            <b>Analogy:</b> Imagine a jar filled with marbles (Anthracite) over sand. Water flows easily until the gaps fill with dirt. Backwashing is like blowing air up from the bottom to shake the dirt loose.
+        </div>
+        <div class="actions">
+            <a href="https://en.wikipedia.org/wiki/Filtration" target="_blank" class="btn">Learn More</a>
+            <button class="btn" onclick="location.reload()">Reset SCADA</button>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script>
+        // --- HYDRAULICS & PHYSICS ---
+        const HYDRAULICS = {
+            TOTAL_PLANT_MGD: 100,
+            FILTER_AREA: 827, // sqft
+            BED_DEPTH: 3.5, // ft (Anthracite + Sand)
+            GPM_TO_MS: 0.000679,
+            
+            viscosity(T) { return 0.00002414 * Math.pow(10, 247.8 / (T + 133.15)); },
+            
+            // Kozeny-Carman Implementation
+            calculateHeadLoss(rate, runtime, T) {
+                const mu = this.viscosity(T);
+                const Vs = rate * this.GPM_TO_MS;
+                const d = 0.0012; // Avg media size (m)
+                let porosity = 0.5 * (1 - (runtime / 100)); // Clogging reduction
+                const hl_Pa_m = (180 * mu * Math.pow(1 - porosity, 2) * Vs) / (Math.pow(porosity, 3) * d * d);
+                return (hl_Pa_m * this.BED_DEPTH * 3.28) / 9810; // return ft
+            }
+        };
+
+        let state = {
+            mode: 'FILTERING',
+            rate: 3.0, runtime: 24, bw: 15.0, temp: 15,
+            hl: 0, turb: 0.05, exp: 0,
+            particles: []
+        };
+
+        // --- P5.JS VISUALIZATION ---
+        new p5((p) => {
+            let mediaGrains = [];
+
+            p.setup = () => {
+                const canvas = p.createCanvas(
+                    p.select('#visualization').width,
+                    p.select('#visualization').height
+                );
+                canvas.parent('visualization');
+                initMedia();
+            };
+
+            function initMedia() {
+                mediaGrains = [];
+                // Anthracite (Top layer)
+                for(let i=0; i<400; i++) {
+                    mediaGrains.push({
+                        x: p.random(p.width * 0.2, p.width * 0.8),
+                        y: p.random(p.height * 0.5, p.height * 0.7),
+                        size: p.random(6, 10),
+                        type: 'anthracite',
+                        color: p.color(40, 45, 55)
+                    });
+                }
+                // Sand (Bottom layer)
+                for(let i=0; i<600; i++) {
+                    mediaGrains.push({
+                        x: p.random(p.width * 0.2, p.width * 0.8),
+                        y: p.random(p.height * 0.7, p.height * 0.85),
+                        size: p.random(3, 5),
+                        type: 'sand',
+                        color: p.color(180, 160, 120)
+                    });
+                }
+            }
+
+            p.draw = () => {
+                p.background(10, 14, 23);
+                
+                // Update Physics
+                if (state.mode === 'FILTERING') {
+                    state.hl = HYDRAULICS.calculateHeadLoss(state.rate, state.runtime, state.temp);
+                    state.exp = 0;
+                    state.turb = state.runtime < 2 ? 0.3 : (state.runtime > 48 ? 0.15 : 0.05);
+                } else {
+                    const muRatio = HYDRAULICS.viscosity(15) / HYDRAULICS.viscosity(state.temp);
+                    state.exp = Math.max(0, (state.bw / 15 * muRatio - 0.7) * 40);
+                    state.hl = 0.5;
+                    state.turb = 0.1;
+                }
+
+                updateUI();
+                drawFilterStructure();
+                drawMedia();
+                drawWater();
+                checkAlarms();
+            };
+
+            function drawFilterStructure() {
+                p.fill(50); p.noStroke();
+                // Underdrain area
+                p.rect(p.width*0.2 - 20, p.height*0.85, p.width*0.6 + 40, 50);
+                p.fill(80);
+                p.rect(p.width*0.2 - 10, p.height*0.1, 10, p.height*0.75); // Left wall
+                p.rect(p.width*0.8, p.height*0.1, 10, p.height*0.75); // Right wall
+            }
+
+            function drawMedia() {
+                mediaGrains.forEach(g => {
+                    let jitter = state.exp * 0.1;
+                    if (state.mode === 'BACKWASHING') {
+                        g.yOffset = p.noise(g.x, p.frameCount * 0.02) * -state.exp * 2;
+                        g.xOffset = (p.noise(g.y, p.frameCount * 0.05) - 0.5) * jitter;
+                    } else {
+                        g.yOffset = 0; g.xOffset = 0;
+                    }
+                    
+                    p.fill(g.color); p.noStroke();
+                    p.ellipse(g.x + (g.xOffset || 0), g.y + (g.yOffset || 0), g.size, g.size);
+                });
+            }
+
+            function drawWater() {
+                let wTop = p.height * 0.25 - (state.hl * 10); // Water rises as HL increases
+                p.fill(0, 150, 255, 80);
+                p.rect(p.width*0.2, wTop, p.width*0.6, p.height*0.85 - wTop);
+                
+                // Surface animation
+                p.stroke(0, 255, 136); p.noFill();
+                p.beginShape();
+                for(let x=p.width*0.2; x<=p.width*0.8; x+=10) {
+                    let y = wTop + p.noise(x*0.02, p.frameCount*0.05) * (state.mode === 'BACKWASHING' ? 20 : 5);
+                    p.vertex(x, y);
+                }
+                p.endShape();
+            }
+
+            function updateUI() {
+                p.select('#val-hl').html(`${state.hl.toFixed(1)} ft`);
+                p.select('#val-turb').html(`${state.turb.toFixed(2)} NTU`);
+                p.select('#val-exp').html(`${Math.round(state.exp)}%`);
+            }
+
+            function checkAlarms() {
+                const alarm = p.select('#alarm');
+                if (state.hl > 7.5) {
+                    alarm.html("! CRITICAL: TERMINAL HEAD LOSS REACHED");
+                    alarm.style('display', 'block');
+                } else if (state.mode === 'BACKWASHING' && state.exp > 40) {
+                    alarm.html("! WARNING: EXCESSIVE BED EXPANSION (MEDIA LOSS)");
+                    alarm.style('display', 'block');
+                } else {
+                    alarm.style('display', 'none');
+                }
+            }
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.select('#visualization').width, p.select('#visualization').height);
+            };
+        });
+
+        // --- DOM EVENT LISTENERS ---
+        document.getElementById('btn-mode').addEventListener('click', (e) => {
+            state.mode = state.mode === 'FILTERING' ? 'BACKWASHING' : 'FILTERING';
+            e.target.innerText = `Currently: ${state.mode}`;
+            e.target.classList.toggle('backwash');
+        });
+        document.getElementById('slider-rate').addEventListener('input', (e) => {
+            state.rate = parseFloat(e.target.value);
+            document.getElementById('readout-rate').innerText = state.rate.toFixed(1);
+        });
+        document.getElementById('slider-runtime').addEventListener('input', (e) => {
+            state.runtime = parseInt(e.target.value);
+            document.getElementById('readout-runtime').innerText = state.runtime;
+        });
+        document.getElementById('slider-bw').addEventListener('input', (e) => {
+            state.bw = parseFloat(e.target.value);
+            document.getElementById('readout-bw').innerText = state.bw.toFixed(1);
+        });
+        document.getElementById('slider-temp').addEventListener('input', (e) => {
+            state.temp = parseInt(e.target.value);
+            document.getElementById('readout-temp').innerText = state.temp;
+        });
+    </script>
+</body>
+</html>

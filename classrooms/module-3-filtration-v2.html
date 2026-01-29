@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Treatment Classroom — Module 3: Filter Gallery (v2.0)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #1a1a2e;
+            color: #e8e8e8;
+            overflow-x: hidden;
+        }
+        .header {
+            background-color: #16213e;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid #00ff88;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            color: #00ff88;
+        }
+        .header .plant-info {
+            color: #888888;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .header .plant-info strong {
+            color: #00ff88;
+        }
+        .main-container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            padding: 20px;
+            height: calc(100vh - 180px);
+        }
+        .controls-section {
+            background-color: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #00ff88;
+            overflow-y: auto;
+        }
+        .gallery-section {
+            background-color: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #00ff88;
+            overflow-y: auto;
+        }
+        .section-title {
+            color: #00ff88;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #0f3460;
+            padding-bottom: 10px;
+        }
+        .summary-box {
+            background-color: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #1a1a2e;
+        }
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+        .summary-label {
+            color: #888888;
+            font-size: 13px;
+        }
+        .summary-value {
+            font-family: 'Consolas', monospace;
+            font-weight: bold;
+            color: #e8e8e8;
+        }
+        .summary-value.good { color: #00ff88; }
+        .summary-value.warning { color: #ffaa00; }
+        .summary-value.danger { color: #ff4444; }
+        .control-group {
+            background-color: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .control-label {
+            color: #888888;
+            font-size: 13px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .control-value {
+            font-family: 'Consolas', monospace;
+            color: #00ff88;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: #1a1a2e;
+            outline: none;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .filter-card {
+            background-color: #0f3460;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #444;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .filter-card.running {
+            border-color: #00ff88;
+        }
+        .filter-card.aging {
+            border-color: #ffaa00;
+        }
+        .filter-card.critical {
+            border-color: #ff4444;
+        }
+        .filter-card.backwashing {
+            border-color: #00ccff;
+            animation: pulse 1s infinite;
+        }
+        .filter-card.offline {
+            opacity: 0.5;
+            border-color: #666;
+        }
+        .filter-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 rgba(0, 204, 255, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(0, 204, 255, 0.8); }
+        }
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .filter-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #e8e8e8;
+        }
+        .filter-status {
+            font-size: 9px;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .status-run { background-color: rgba(0, 255, 136, 0.2); color: #00ff88; }
+        .status-age { background-color: rgba(255, 170, 0, 0.2); color: #ffaa00; }
+        .status-crit { background-color: rgba(255, 68, 68, 0.2); color: #ff4444; }
+        .status-bw { background-color: rgba(0, 204, 255, 0.2); color: #00ccff; }
+        .status-off { background-color: rgba(136, 136, 136, 0.2); color: #888; }
+        .filter-metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 11px;
+        }
+        .metric-label {
+            color: #888888;
+        }
+        .metric-value {
+            font-family: 'Consolas', monospace;
+            color: #e8e8e8;
+            font-weight: bold;
+        }
+        .head-loss-bar {
+            height: 6px;
+            background-color: #1a1a2e;
+            border-radius: 3px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+        .head-loss-fill {
+            height: 100%;
+            transition: width 0.3s, background-color 0.3s;
+        }
+        .filter-buttons {
+            display: flex;
+            gap: 5px;
+            margin-top: 8px;
+        }
+        .filter-btn {
+            flex: 1;
+            padding: 6px;
+            font-size: 9px;
+            font-weight: bold;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-backwash {
+            background-color: #00ccff;
+            color: #1a1a2e;
+        }
+        .btn-backwash:hover {
+            background-color: #00aadd;
+        }
+        .btn-offline {
+            background-color: #ff4444;
+            color: white;
+        }
+        .btn-offline:hover {
+            background-color: #cc0000;
+        }
+        .btn-online {
+            background-color: #00ff88;
+            color: #1a1a2e;
+        }
+        .btn-online:hover {
+            background-color: #00cc6f;
+        }
+        .alert-box {
+            background-color: rgba(255, 170, 0, 0.1);
+            border-left: 4px solid #ffaa00;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        .alert-box.danger {
+            background-color: rgba(255, 68, 68, 0.1);
+            border-color: #ff4444;
+        }
+        .instructions {
+            background-color: rgba(0, 255, 136, 0.1);
+            border-left: 4px solid #00ff88;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .backwash-queue {
+            background-color: #0f3460;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .queue-title {
+            color: #00ccff;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .queue-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 11px;
+            border-bottom: 1px solid #1a1a2e;
+        }
+        .queue-item:last-child {
+            border-bottom: none;
+        }
+        .footer {
+            background-color: #16213e;
+            padding: 15px 20px;
+            border-top: 3px solid #00ff88;
+            text-align: center;
+            font-size: 13px;
+            color: #888888;
+            margin-top: 20px;
+        }
+        .auto-button {
+            width: 100%;
+            padding: 12px;
+            background-color: #00ff88;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        .auto-button:hover {
+            background-color: #00cc6f;
+        }
+        .auto-button.active {
+            background-color: #ffaa00;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MODULE 3: FILTER GALLERY OPERATION</h1>
+        <div class="plant-info">
+            <strong>100 MGD Regional Water Treatment Plant</strong> | 16 Dual-Media Filters: 20' × 20' each (400 sq ft)
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- CONTROLS SECTION -->
+        <div class="controls-section">
+            <div class="section-title">⚙️ Gallery Controls</div>
+
+            <div class="instructions">
+                <strong>Operator Instructions:</strong> Monitor all 16 filters. Backwash when head loss reaches 8-9 ft (before terminal at 10 ft). Max 2 filters backwashing simultaneously due to backwash pump capacity. Green = good, Yellow = aging, Red = needs backwash NOW.
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Plant Flow Rate</span>
+                    <span class="control-value"><span id="flowDisplay">100</span> MGD</span>
+                </div>
+                <input type="range" id="flowRate" min="70" max="120" value="100" step="2">
+            </div>
+
+            <div class="summary-box">
+                <div class="summary-row">
+                    <span class="summary-label">Filters Running:</span>
+                    <span class="summary-value" id="filtersRunning">16 of 16</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Filters Backwashing:</span>
+                    <span class="summary-value" id="filtersBackwashing">0</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Filters Offline:</span>
+                    <span class="summary-value" id="filtersOffline">0</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Total Filter Area:</span>
+                    <span class="summary-value">6,400 sq ft</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Average Loading Rate:</span>
+                    <span class="summary-value" id="avgRate">4.1 gpm/ft²</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Combined Effluent:</span>
+                    <span class="summary-value good" id="combinedEffluent">0.06 NTU</span>
+                </div>
+            </div>
+
+            <div id="alertBox" class="alert-box" style="display: none;">
+                <strong>⚠️ ALERT:</strong> <span id="alertText"></span>
+            </div>
+
+            <button class="auto-button" id="autoAdvance" onclick="toggleAutoAdvance()">
+                ▶ START AUTO TIME ADVANCE (Simulate Aging)
+            </button>
+
+            <div class="backwash-queue">
+                <div class="queue-title">📋 Backwash Queue (by Head Loss)</div>
+                <div id="queueList"></div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Backwash Water Temp</span>
+                    <span class="control-value"><span id="tempDisplay">15</span>°C</span>
+                </div>
+                <input type="range" id="waterTemp" min="5" max="25" value="15" step="1">
+                <div style="font-size: 11px; color: #888; margin-top: 8px;">
+                    Cold water: Higher bed expansion at same backwash rate
+                </div>
+            </div>
+        </div>
+
+        <!-- GALLERY SECTION -->
+        <div class="gallery-section">
+            <div class="section-title">🏭 Filter Gallery - 16 Filters (4×4 Layout)</div>
+            <div class="filter-grid" id="filterGrid"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        💡 <strong>Operator Tip:</strong> At 100 MGD with 16 filters (6,400 sq ft total), average rate = 4.1 gpm/ft². Each filter runs 24-36 hrs before backwash needed. Backwash takes ~15 minutes. Can't backwash more than 2 at once (pump capacity limit). Prioritize highest head loss filters. Terminal head loss = 10 ft. Cold water backwash: reduce rate by 15-20% to prevent media loss.
+    </div>
+
+    <script>
+// ═══════════════════════════════════════════════════════════
+// MODULE 3 V2.0: FILTRATION - 16-FILTER GALLERY
+// 100 MGD PLANT, MULTI-FILTER OPERATION
+// ═══════════════════════════════════════════════════════════
+
+const FILTER_SPECS = {
+    count: 16,
+    width: 20, // feet
+    length: 20, // feet
+    area: 400, // sq ft per filter
+    totalArea: 6400, // sq ft (16 × 400)
+    bedDepth: 30, // inches
+    maxHeadLoss: 10, // feet (terminal)
+    backwashTime: 15 // minutes
+};
+
+let state = {
+    flowRate: 100, // MGD
+    waterTemp: 15, // °C
+    autoAdvance: false,
+    filters: [],
+    backwashQueue: []
+};
+
+// Initialize filters
+function initializeFilters() {
+    state.filters = [];
+    for (let i = 1; i <= FILTER_SPECS.count; i++) {
+        state.filters.push({
+            id: i,
+            status: 'running', // running, backwashing, offline
+            runtime: Math.floor(Math.random() * 30), // hours since last backwash
+            headLoss: 2 + Math.random() * 3, // feet (starting range 2-5)
+            effluent: 0.05 + Math.random() * 0.02, // NTU
+            backwashProgress: 0 // 0-100%
+        });
+    }
+}
+
+function calculateHeadLoss(runtime, flowRate) {
+    // Exponential head loss curve based on runtime
+    // HL = base × (1 + k × runtime²)
+    const baseHL = 2.0; // Clean filter
+    const k = 0.002; // Clogging rate
+    const flowFactor = flowRate / 100; // Adjustment for flow changes
+    return baseHL * (1 + k * Math.pow(runtime, 2)) * flowFactor;
+}
+
+function updateFilters(deltaTime) {
+    const filtersRunning = state.filters.filter(f => f.status === 'running').length;
+    const filtersBackwashing = state.filters.filter(f => f.status === 'backwashing').length;
+    const effectiveArea = filtersRunning * FILTER_SPECS.area;
+    const filteringRate = effectiveArea > 0 ? (state.flowRate * 694.44) / effectiveArea : 0; // gpm/ft²
+
+    state.filters.forEach(filter => {
+        if (filter.status === 'running') {
+            // Increase runtime
+            if (state.autoAdvance) {
+                filter.runtime += deltaTime / 60; // Convert minutes to hours
+            }
+
+            // Calculate head loss
+            filter.headLoss = calculateHeadLoss(filter.runtime, state.flowRate);
+
+            // Calculate effluent turbidity
+            if (filter.headLoss < 8) {
+                filter.effluent = 0.04 + Math.random() * 0.02; // Good
+            } else if (filter.headLoss < 10) {
+                filter.effluent = 0.05 + (filter.headLoss - 8) * 0.02; // Rising
+            } else {
+                // Breakthrough
+                filter.effluent = 0.3 + Math.random() * 0.2;
+            }
+        } else if (filter.status === 'backwashing') {
+            // Progress backwash
+            filter.backwashProgress += deltaTime / FILTER_SPECS.backwashTime * 100;
+            if (filter.backwashProgress >= 100) {
+                // Backwash complete
+                filter.status = 'running';
+                filter.runtime = 0;
+                filter.headLoss = 2.0;
+                filter.effluent = 0.05;
+                filter.backwashProgress = 0;
+            }
+        }
+    });
+}
+
+function getFilterStatus(filter) {
+    if (filter.status === 'offline') return { status: 'OFFLINE', class: 'offline', statusClass: 'status-off' };
+    if (filter.status === 'backwashing') return { status: 'BACKWASH', class: 'backwashing', statusClass: 'status-bw' };
+
+    if (filter.headLoss >= 9) return { status: 'CRITICAL', class: 'critical', statusClass: 'status-crit' };
+    if (filter.headLoss >= 7) return { status: 'AGING', class: 'aging', statusClass: 'status-age' };
+    return { status: 'RUNNING', class: 'running', statusClass: 'status-run' };
+}
+
+function renderFilters() {
+    const grid = document.getElementById('filterGrid');
+    grid.innerHTML = '';
+
+    state.filters.forEach(filter => {
+        const status = getFilterStatus(filter);
+
+        const card = document.createElement('div');
+        card.className = `filter-card ${status.class}`;
+        card.id = `filter${filter.id}`;
+
+        let content = `
+            <div class="filter-header">
+                <div class="filter-name">FILTER #${filter.id}</div>
+                <div class="filter-status ${status.statusClass}">${status.status}</div>
+            </div>
+        `;
+
+        if (filter.status === 'running') {
+            const hlPercent = Math.min(100, (filter.headLoss / FILTER_SPECS.maxHeadLoss) * 100);
+            let hlColor = '#00ff88';
+            if (filter.headLoss >= 9) hlColor = '#ff4444';
+            else if (filter.headLoss >= 7) hlColor = '#ffaa00';
+
+            content += `
+                <div class="filter-metric">
+                    <span class="metric-label">Runtime:</span>
+                    <span class="metric-value">${filter.runtime.toFixed(1)} hrs</span>
+                </div>
+                <div class="filter-metric">
+                    <span class="metric-label">Head Loss:</span>
+                    <span class="metric-value">${filter.headLoss.toFixed(1)} ft</span>
+                </div>
+                <div class="head-loss-bar">
+                    <div class="head-loss-fill" style="width: ${hlPercent}%; background-color: ${hlColor};"></div>
+                </div>
+                <div class="filter-metric">
+                    <span class="metric-label">Effluent:</span>
+                    <span class="metric-value">${filter.effluent.toFixed(2)} NTU</span>
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn btn-backwash" onclick="startBackwash(${filter.id})">BACKWASH</button>
+                    <button class="filter-btn btn-offline" onclick="toggleOffline(${filter.id})">OFFLINE</button>
+                </div>
+            `;
+        } else if (filter.status === 'backwashing') {
+            content += `
+                <div style="padding: 20px 0; text-align: center;">
+                    <div style="font-size: 24px; color: #00ccff; margin-bottom: 10px;">
+                        ${Math.floor(filter.backwashProgress)}%
+                    </div>
+                    <div style="font-size: 11px; color: #888;">
+                        Backwash in progress...
+                    </div>
+                </div>
+            `;
+        } else if (filter.status === 'offline') {
+            content += `
+                <div style="padding: 20px 0; text-align: center;">
+                    <div style="font-size: 14px; color: #888; margin-bottom: 10px;">
+                        Filter offline for maintenance
+                    </div>
+                    <div class="filter-buttons">
+                        <button class="filter-btn btn-online" onclick="toggleOffline(${filter.id})">BRING ONLINE</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        card.innerHTML = content;
+        grid.appendChild(card);
+    });
+
+    updateSummary();
+    updateBackwashQueue();
+    checkAlerts();
+}
+
+function updateSummary() {
+    const running = state.filters.filter(f => f.status === 'running').length;
+    const backwashing = state.filters.filter(f => f.status === 'backwashing').length;
+    const offline = state.filters.filter(f => f.status === 'offline').length;
+
+    document.getElementById('filtersRunning').textContent = `${running} of 16`;
+    document.getElementById('filtersBackwashing').textContent = backwashing;
+    document.getElementById('filtersOffline').textContent = offline;
+
+    const effectiveArea = running * FILTER_SPECS.area;
+    const avgRate = effectiveArea > 0 ? (state.flowRate * 694.44) / effectiveArea : 0;
+    document.getElementById('avgRate').textContent = avgRate.toFixed(2) + ' gpm/ft²';
+
+    // Combined effluent (weighted average)
+    const runningFilters = state.filters.filter(f => f.status === 'running');
+    const combinedEffluent = runningFilters.length > 0
+        ? runningFilters.reduce((sum, f) => sum + f.effluent, 0) / runningFilters.length
+        : 0;
+
+    const effluentEl = document.getElementById('combinedEffluent');
+    effluentEl.textContent = combinedEffluent.toFixed(2) + ' NTU';
+    effluentEl.className = 'summary-value';
+    if (combinedEffluent < 0.1) effluentEl.classList.add('good');
+    else if (combinedEffluent < 0.2) effluentEl.classList.add('warning');
+    else effluentEl.classList.add('danger');
+}
+
+function updateBackwashQueue() {
+    const queueList = document.getElementById('queueList');
+    const runningFilters = state.filters
+        .filter(f => f.status === 'running')
+        .sort((a, b) => b.headLoss - a.headLoss)
+        .slice(0, 5); // Top 5
+
+    queueList.innerHTML = '';
+    runningFilters.forEach((filter, idx) => {
+        const item = document.createElement('div');
+        item.className = 'queue-item';
+        item.innerHTML = `
+            <span style="color: #888;">${idx + 1}. Filter #${filter.id}</span>
+            <span style="color: ${filter.headLoss >= 9 ? '#ff4444' : filter.headLoss >= 7 ? '#ffaa00' : '#00ff88'};">
+                ${filter.headLoss.toFixed(1)} ft
+            </span>
+        `;
+        queueList.appendChild(item);
+    });
+}
+
+function checkAlerts() {
+    const alertBox = document.getElementById('alertBox');
+    const alertText = document.getElementById('alertText');
+
+    const critical = state.filters.filter(f => f.status === 'running' && f.headLoss >= 9).length;
+    const backwashing = state.filters.filter(f => f.status === 'backwashing').length;
+    const running = state.filters.filter(f => f.status === 'running').length;
+    const breakthrough = state.filters.filter(f => f.status === 'running' && f.headLoss >= 10).length;
+
+    if (breakthrough > 0) {
+        alertBox.style.display = 'block';
+        alertBox.className = 'alert-box danger';
+        alertText.textContent = `${breakthrough} filter(s) at breakthrough! Poor water quality - BACKWASH NOW!`;
+    } else if (critical > 0 && backwashing >= 2) {
+        alertBox.style.display = 'block';
+        alertBox.className = 'alert-box danger';
+        alertText.textContent = `${critical} filter(s) critical but max backwash capacity reached (2 simultaneous). Queue building.`;
+    } else if (critical >= 3) {
+        alertBox.style.display = 'block';
+        alertBox.className = 'alert-box';
+        alertText.textContent = `${critical} filter(s) need backwash. Prioritize highest head loss.`;
+    } else if (running < 12) {
+        alertBox.style.display = 'block';
+        alertBox.className = 'alert-box';
+        alertText.textContent = `Only ${running} filters running. High loading rate on remaining filters.`;
+    } else {
+        alertBox.style.display = 'none';
+    }
+}
+
+function startBackwash(filterId) {
+    const filter = state.filters.find(f => f.id === filterId);
+    if (!filter || filter.status !== 'running') return;
+
+    const backwashing = state.filters.filter(f => f.status === 'backwashing').length;
+    if (backwashing >= 2) {
+        alert('Cannot start backwash - maximum 2 filters can backwash simultaneously (backwash pump capacity limit).');
+        return;
+    }
+
+    filter.status = 'backwashing';
+    filter.backwashProgress = 0;
+    renderFilters();
+}
+
+function toggleOffline(filterId) {
+    const filter = state.filters.find(f => f.id === filterId);
+    if (!filter) return;
+
+    if (filter.status === 'offline') {
+        filter.status = 'running';
+        filter.runtime = 0;
+        filter.headLoss = 2.0;
+        filter.effluent = 0.05;
+    } else if (filter.status === 'running') {
+        filter.status = 'offline';
+    }
+
+    renderFilters();
+}
+
+function toggleAutoAdvance() {
+    state.autoAdvance = !state.autoAdvance;
+    const button = document.getElementById('autoAdvance');
+
+    if (state.autoAdvance) {
+        button.textContent = '⏸ PAUSE AUTO TIME ADVANCE';
+        button.classList.add('active');
+    } else {
+        button.textContent = '▶ START AUTO TIME ADVANCE (Simulate Aging)';
+        button.classList.remove('active');
+    }
+}
+
+// Animation loop
+let lastTime = Date.now();
+function animate() {
+    const now = Date.now();
+    const deltaTime = (now - lastTime) / 1000; // seconds
+    lastTime = now;
+
+    if (state.autoAdvance) {
+        updateFilters(deltaTime * 30); // 30× speed (30 seconds = 1 minute runtime)
+        renderFilters();
+    }
+
+    requestAnimationFrame(animate);
+}
+
+// Event listeners
+document.getElementById('flowRate').addEventListener('input', (e) => {
+    state.flowRate = parseInt(e.target.value);
+    document.getElementById('flowDisplay').textContent = state.flowRate;
+    renderFilters();
+});
+
+document.getElementById('waterTemp').addEventListener('input', (e) => {
+    state.waterTemp = parseInt(e.target.value);
+    document.getElementById('tempDisplay').textContent = state.waterTemp;
+});
+
+// Initialize
+initializeFilters();
+renderFilters();
+animate();
+    </script>
+</body>
+</html>

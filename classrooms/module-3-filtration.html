@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Treatment Classroom — Module 3: Filtration</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #1a1a2e;
+            color: #e8e8e8;
+            overflow-x: hidden;
+        }
+        .header {
+            background-color: #16213e;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #00ff88;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        .header p {
+            color: #888888;
+            font-size: 14px;
+        }
+        .main-container {
+            display: flex;
+            height: calc(100vh - 140px);
+        }
+        .left-panel {
+            width: 40%;
+            background-color: #16213e;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid #00ff88;
+        }
+        .right-panel {
+            width: 60%;
+            background-color: #1a1a2e;
+            position: relative;
+        }
+        .control-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #1a1a2e;
+            border-radius: 8px;
+        }
+        .control-section h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .mode-button {
+            flex: 1;
+            padding: 12px;
+            background-color: #0f3460;
+            color: #888888;
+            border: 2px solid #0f3460;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .mode-button.active {
+            background-color: #00ff88;
+            color: #1a1a2e;
+            border-color: #00ff88;
+        }
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        .slider-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #00ff88;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #0f3460;
+            outline: none;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #00ff88;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            background-color: #0f3460;
+            color: #e8e8e8;
+            border: 1px solid #00ff88;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .gauge {
+            width: 100%;
+            height: 100px;
+            background-color: #0f3460;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .gauge-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 36px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        .gauge-value.warning {
+            color: #ffaa00;
+        }
+        .gauge-value.danger {
+            color: #ff4444;
+        }
+        .gauge-label {
+            color: #888888;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .status-indicator {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 8px 0;
+            font-size: 13px;
+            border-left: 4px solid;
+        }
+        .status-good {
+            background-color: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+        }
+        .status-warning {
+            background-color: rgba(255, 170, 0, 0.1);
+            border-color: #ffaa00;
+        }
+        .status-danger {
+            background-color: rgba(255, 68, 68, 0.1);
+            border-color: #ff4444;
+        }
+        .metric-display {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #0f3460;
+            border-radius: 5px;
+        }
+        .metric-label {
+            color: #888888;
+        }
+        .metric-value {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #e8e8e8;
+            font-weight: bold;
+        }
+        .reset-button {
+            width: 100%;
+            padding: 15px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .reset-button:hover {
+            background-color: #cc0000;
+        }
+        .footer {
+            background-color: #16213e;
+            padding: 15px 20px;
+            border-top: 2px solid #00ff88;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .analogy-box {
+            flex: 1;
+            padding: 10px;
+            background-color: rgba(0, 255, 136, 0.1);
+            border-left: 4px solid #00ff88;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .learn-more {
+            margin-left: 20px;
+            padding: 10px 20px;
+            background-color: #00ff88;
+            color: #1a1a2e;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .learn-more:hover {
+            background-color: #00cc6f;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #00ff88;
+            margin-left: 5px;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 280px;
+            background-color: #16213e;
+            color: #e8e8e8;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid #00ff88;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        #visualization {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MODULE 3: FILTRATION</h1>
+        <p>Understanding Head Loss, Breakthrough, and Backwash Expansion</p>
+    </div>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="control-section">
+                <h3>Mode</h3>
+                <div class="mode-toggle">
+                    <button class="mode-button active" id="filterModeBtn" onclick="setMode('filter')">● FILTER</button>
+                    <button class="mode-button" id="backwashModeBtn" onclick="setMode('backwash')">○ BACKWASH</button>
+                </div>
+            </div>
+
+            <div class="control-section" id="filterControls">
+                <h3>Filtration Controls</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Filtration Rate (gpm/ft²) <span class="tooltip">?<span class="tooltiptext">How fast you push water through. Faster = more production, but clogs faster and risks breakthrough.</span></span></span>
+                        <span class="slider-value" id="rateValue">3.0</span>
+                    </div>
+                    <input type="range" id="filtrationRate" min="1" max="6" value="3.0" step="0.1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Run Time (hours) <span class="tooltip">?<span class="tooltiptext">How long since last backwash. Most filters run 24-48 hrs max. Longer = more clogged. Watch head loss climb!</span></span></span>
+                        <span class="slider-value" id="runTimeValue">0</span>
+                    </div>
+                    <input type="range" id="runTime" min="0" max="48" value="0" step="1">
+                </div>
+
+                <div class="gauge">
+                    <div class="gauge-value" id="headLossGauge">2.0</div>
+                    <div class="gauge-label">HEAD LOSS (feet) — Terminal: 10 ft</div>
+                </div>
+
+                <div class="metric-display">
+                    <span class="metric-label">Effluent Turbidity:</span>
+                    <span class="metric-value" id="turbidityValue">0.05 NTU</span>
+                </div>
+            </div>
+
+            <div class="control-section" id="backwashControls" style="display:none;">
+                <h3>Backwash Controls</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Backwash Rate (gpm/ft²) <span class="tooltip">?<span class="tooltiptext">How hard you flush backwards. Need 20-30% bed expansion. Too soft = dirty media. Too hard = media loss!</span></span></span>
+                        <span class="slider-value" id="backwashRateValue">15</span>
+                    </div>
+                    <input type="range" id="backwashRate" min="10" max="25" value="15" step="1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Temperature (°C) <span class="tooltip">?<span class="tooltiptext">Cold water is thicker — same backwash rate expands the bed MORE in winter. Adjust your rate or lose anthracite!</span></span></span>
+                        <span class="slider-value" id="tempValue">15</span>
+                    </div>
+                    <input type="range" id="temperature" min="1" max="30" value="15" step="1">
+                </div>
+                <div class="slider-group">
+                    <label>Media Type <span class="tooltip">?<span class="tooltiptext">Anthracite (light), sand (heavy), or dual (both layers). Different densities = different backwash needs.</span></span></label>
+                    <select id="mediaType">
+                        <option value="anthracite">Anthracite</option>
+                        <option value="sand">Sand</option>
+                        <option value="dual" selected>Dual Media</option>
+                    </select>
+                </div>
+
+                <div class="metric-display">
+                    <span class="metric-label">Bed Expansion:</span>
+                    <span class="metric-value" id="expansionValue">25%</span>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Status</h3>
+                <div id="statusMessage" class="status-indicator status-good">
+                    ✓ Filter operating normally
+                </div>
+            </div>
+
+            <button class="reset-button" onclick="resetSimulation()">RESET SIMULATION</button>
+        </div>
+
+        <div class="right-panel">
+            <div id="visualization"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="analogy-box">
+            💡 <strong>Analogy:</strong> Your filter is like a coffee filter filled with gravel. At first, water flows easily. As dirt builds up, the pores clog and you have to push harder (rising head loss). Eventually, dirt starts squeezing through the packed pores (breakthrough). Backwashing shakes and rinses it clean — but shake too hard in cold, thick water and the gravel flies out.
+        </div>
+        <a href="https://www.epa.gov/dwreginfo/filtration-water-treatment" target="_blank" class="learn-more">📚 Learn More</a>
+    </div>
+
+    <script>
+// ═══════════════════════════════════════════════════════════
+// MODULE: FILTRATION
+// DOMAIN: Filtration
+// VERSION: 1.0
+// ═══════════════════════════════════════════════════════════
+
+// --- CONFIGURATION ---
+const CONFIG = {
+    canvasWidth: window.innerWidth * 0.6,
+    canvasHeight: window.innerHeight - 140,
+    bedDepth: 30, // inches
+};
+
+// --- STATE ---
+let state = {
+    mode: 'filter',
+    filtrationRate: 3.0,
+    runTime: 0,
+    backwashRate: 15,
+    temperature: 15,
+    mediaType: 'dual',
+    porosity: 0.40, // Clean filter starts at 0.40
+    headLoss: 2.0,
+    turbidity: 0.05,
+};
+
+// --- PHYSICS ENGINE ---
+function calculateViscosity(tempC) {
+    const exponent = 247.8 / (tempC + 133.15);
+    return 0.00002414 * Math.pow(10, exponent);
+}
+
+function calculatePorosityReduction(runTime, rate) {
+    // Porosity decreases over time as filter clogs
+    // ε(t) = ε₀ - (accumulation × rate × time)
+    const epsilon0 = 0.40;
+    const clggingRate = 0.0003 * rate; // Higher rate = faster clogging
+    const reduction = cloggingRate * runTime;
+    return Math.max(0.25, epsilon0 - reduction); // Minimum 0.25
+}
+
+function calculateHeadLoss(porosity, rate, temp) {
+    // Kozeny-Carman: ΔH ∝ (1-ε)² / ε³
+    // Also depends on viscosity and flow rate
+    const mu = calculateViscosity(temp);
+    const baseHeadLoss = 2.0; // Clean filter at standard conditions
+
+    const porosityFactor = ((1 - porosity) ** 2) / (porosity ** 3);
+    const cleanPorosityFactor = ((1 - 0.40) ** 2) / (0.40 ** 3);
+
+    const headLoss = baseHeadLoss * (porosityFactor / cleanPorosityFactor) * (rate / 3.0) * (mu / calculateViscosity(15));
+
+    return headLoss;
+}
+
+function calculateTurbidity(runTime, headLoss) {
+    // Effluent turbidity is excellent until breakthrough
+    if (headLoss < 8) return 0.05; // Excellent
+    if (headLoss < 10) return 0.05 + (headLoss - 8) * 0.1; // Rising
+    // Breakthrough
+    return 0.5 + (runTime - 40) * 0.05; // Spiking
+}
+
+function calculateBedExpansion(backwashRate, temp, mediaType) {
+    // Expansion% = f(backwash_rate, temperature, media_density)
+    // Drag force ∝ μ × velocity
+    // Cold water (higher μ) = MORE drag = MORE expansion
+
+    const mu = calculateViscosity(temp);
+    const mu_ref = calculateViscosity(15); // Reference at 15°C
+    const viscosityFactor = mu / mu_ref;
+
+    // Media density factor (anthracite is lighter, expands more)
+    let densityFactor = 1.0;
+    if (mediaType === 'anthracite') densityFactor = 1.3;
+    if (mediaType === 'sand') densityFactor = 0.8;
+
+    // Base expansion at 15 gpm/ft², 15°C
+    const baseExpansion = 25; // percent
+    const expansion = baseExpansion * (backwashRate / 15) * viscosityFactor * densityFactor;
+
+    return Math.min(60, expansion); // Cap at 60%
+}
+
+function calculateStatus() {
+    if (state.mode === 'filter') {
+        if (state.headLoss > 10) {
+            return { type: 'danger', message: '⚠ TERMINAL HEAD LOSS - Backwash NOW' };
+        }
+        if (state.turbidity > 0.3) {
+            return { type: 'danger', message: '⚠ BREAKTHROUGH - Poor water quality - BACKWASH' };
+        }
+        if (state.headLoss > 8) {
+            return { type: 'warning', message: '⚠ High head loss - Consider backwash soon' };
+        }
+        return { type: 'good', message: '✓ Filter operating normally' };
+    } else {
+        // Backwash mode
+        const expansion = calculateBedExpansion(state.backwashRate, state.temperature, state.mediaType);
+        if (expansion > 40) {
+            return { type: 'danger', message: '⚠ MEDIA LOSS RISK - Reduce backwash rate!' };
+        }
+        if (state.temperature < 5 && state.backwashRate > 18) {
+            return { type: 'danger', message: '⚠ MEDIA LOSS - Cold water requires lower backwash rate!' };
+        }
+        if (expansion < 15) {
+            return { type: 'warning', message: '⚠ INADEQUATE BACKWASH - Increase rate' };
+        }
+        if (expansion >= 20 && expansion <= 30) {
+            return { type: 'good', message: '✓ OPTIMAL BACKWASH - Good bed expansion' };
+        }
+        if (expansion > 30 && expansion <= 40) {
+            return { type: 'warning', message: '⚠ Excessive expansion - Risk of media loss' };
+        }
+        return { type: 'good', message: '○ Backwashing in progress' };
+    }
+}
+
+function updateUI() {
+    document.getElementById('rateValue').textContent = state.filtrationRate.toFixed(1);
+    document.getElementById('runTimeValue').textContent = state.runTime;
+    document.getElementById('backwashRateValue').textContent = state.backwashRate;
+    document.getElementById('tempValue').textContent = state.temperature;
+
+    if (state.mode === 'filter') {
+        // Update porosity based on run time
+        state.porosity = calculatePorosityReduction(state.runTime, state.filtrationRate);
+
+        // Calculate head loss
+        state.headLoss = calculateHeadLoss(state.porosity, state.filtrationRate, 15);
+
+        // Calculate turbidity
+        state.turbidity = calculateTurbidity(state.runTime, state.headLoss);
+
+        // Update displays
+        const headLossEl = document.getElementById('headLossGauge');
+        headLossEl.textContent = state.headLoss.toFixed(1);
+        headLossEl.className = 'gauge-value';
+        if (state.headLoss > 8) headLossEl.className = 'gauge-value warning';
+        if (state.headLoss > 10) headLossEl.className = 'gauge-value danger';
+
+        document.getElementById('turbidityValue').textContent = state.turbidity.toFixed(2) + ' NTU';
+    } else {
+        // Backwash mode
+        const expansion = calculateBedExpansion(state.backwashRate, state.temperature, state.mediaType);
+        document.getElementById('expansionValue').textContent = expansion.toFixed(0) + '%';
+    }
+
+    const status = calculateStatus();
+    const statusDiv = document.getElementById('statusMessage');
+    statusDiv.textContent = status.message;
+    statusDiv.className = 'status-indicator status-' + status.type;
+}
+
+function setMode(mode) {
+    state.mode = mode;
+
+    if (mode === 'filter') {
+        document.getElementById('filterModeBtn').className = 'mode-button active';
+        document.getElementById('backwashModeBtn').className = 'mode-button';
+        document.getElementById('filterControls').style.display = 'block';
+        document.getElementById('backwashControls').style.display = 'none';
+    } else {
+        document.getElementById('filterModeBtn').className = 'mode-button';
+        document.getElementById('backwashModeBtn').className = 'mode-button active';
+        document.getElementById('filterControls').style.display = 'none';
+        document.getElementById('backwashControls').style.display = 'block';
+    }
+
+    updateUI();
+}
+
+// --- P5.JS SKETCH ---
+let sketch = function(p) {
+    p.setup = function() {
+        const canvas = p.createCanvas(CONFIG.canvasWidth, CONFIG.canvasHeight);
+        canvas.parent('visualization');
+    };
+
+    p.draw = function() {
+        p.background(26, 26, 46);
+
+        const bedX = CONFIG.canvasWidth / 2;
+        const bedY = 150;
+        const bedWidth = 300;
+        const bedHeight = 400;
+
+        if (state.mode === 'filter') {
+            // Draw filter bed (filtration mode)
+            p.fill(232, 232, 232);
+            p.textSize(14);
+            p.textAlign(p.CENTER);
+            p.text('FILTER MODE - Cross Section View', bedX, 40);
+
+            // Effluent (top)
+            p.fill(100, 150, 255, 100);
+            p.noStroke();
+            p.rect(bedX - bedWidth/2, bedY - 50, bedWidth, 40);
+            p.fill(232, 232, 232);
+            p.textSize(11);
+            p.text('Effluent →', bedX, bedY - 25);
+
+            // Anthracite layer
+            const anthraciteHeight = bedHeight * 0.5;
+            p.fill(80, 80, 100);
+            p.rect(bedX - bedWidth/2, bedY, bedWidth, anthraciteHeight);
+
+            // Draw particles trapped in anthracite
+            const particleDensity = p.map(state.runTime, 0, 48, 0, 50);
+            for (let i = 0; i < particleDensity; i++) {
+                p.fill(255, 200, 100);
+                const px = bedX - bedWidth/2 + p.random(bedWidth);
+                const py = bedY + p.random(anthraciteHeight);
+                p.circle(px, py, 4);
+            }
+
+            p.fill(232, 232, 232);
+            p.textSize(11);
+            p.text('Anthracite', bedX + bedWidth/2 + 50, bedY + anthraciteHeight/2);
+
+            // Sand layer
+            const sandHeight = bedHeight * 0.4;
+            p.fill(140, 120, 80);
+            p.rect(bedX - bedWidth/2, bedY + anthraciteHeight, bedWidth, sandHeight);
+            p.fill(232, 232, 232);
+            p.text('Sand', bedX + bedWidth/2 + 50, bedY + anthraciteHeight + sandHeight/2);
+
+            // Underdrain
+            p.fill(60, 60, 80);
+            p.rect(bedX - bedWidth/2, bedY + anthraciteHeight + sandHeight, bedWidth, 30);
+
+            // Influent (bottom)
+            p.fill(100, 150, 255, 100);
+            p.rect(bedX - bedWidth/2, bedY + bedHeight + 40, bedWidth, 40);
+            p.fill(232, 232, 232);
+            p.text('Influent →', bedX, bedY + bedHeight + 65);
+
+            // Head loss indicator
+            const headLossHeight = p.map(state.headLoss, 0, 15, 0, bedHeight);
+            p.stroke(255, 68, 68);
+            p.strokeWeight(3);
+            p.noFill();
+            p.line(bedX - bedWidth/2 - 40, bedY, bedX - bedWidth/2 - 40, bedY + headLossHeight);
+            p.fill(255, 68, 68);
+            p.noStroke();
+            p.textSize(10);
+            p.text('Head Loss', bedX - bedWidth/2 - 40, bedY - 10);
+
+        } else {
+            // Backwash mode
+            p.fill(232, 232, 232);
+            p.textSize(14);
+            p.textAlign(p.CENTER);
+            p.text('BACKWASH MODE - Bed Expansion', bedX, 40);
+
+            const expansion = calculateBedExpansion(state.backwashRate, state.temperature, state.mediaType);
+            const expandedHeight = bedHeight * (1 + expansion / 100);
+
+            // Static bed height (outline)
+            p.stroke(100, 100, 100);
+            p.strokeWeight(2);
+            p.noFill();
+            p.rect(bedX - bedWidth/2, bedY, bedWidth, bedHeight);
+            p.fill(100, 100, 100);
+            p.noStroke();
+            p.textSize(10);
+            p.text('← Static Height', bedX + bedWidth/2 + 60, bedY + bedHeight/2);
+
+            // Expanded bed (filled)
+            p.fill(100, 150, 200, 150);
+            p.rect(bedX - bedWidth/2, bedY + bedHeight - expandedHeight, bedWidth, expandedHeight);
+
+            // Particles being released (animated)
+            if (p.frameCount % 5 === 0) {
+                for (let i = 0; i < 10; i++) {
+                    p.fill(255, 200, 100, 200);
+                    const px = bedX - bedWidth/2 + p.random(bedWidth);
+                    const py = bedY + bedHeight - expandedHeight + p.random(expandedHeight);
+                    p.circle(px, py, p.random(2, 5));
+                }
+            }
+
+            // Expansion indicator
+            p.stroke(0, 255, 136);
+            p.strokeWeight(3);
+            p.line(bedX + bedWidth/2 + 20, bedY + bedHeight, bedX + bedWidth/2 + 20, bedY + bedHeight - expandedHeight);
+            p.fill(0, 255, 136);
+            p.noStroke();
+            p.textSize(12);
+            p.text(expansion.toFixed(0) + '% Expansion', bedX + bedWidth/2 + 80, bedY + bedHeight - expandedHeight/2);
+
+            // Backwash water flow (arrows)
+            p.stroke(100, 150, 255);
+            p.strokeWeight(2);
+            for (let i = 0; i < 5; i++) {
+                const arrowY = bedY + bedHeight + 50 - (p.frameCount % 60);
+                p.line(bedX - 100 + i * 50, arrowY, bedX - 100 + i * 50, arrowY - 20);
+                // Arrow head
+                p.line(bedX - 100 + i * 50, arrowY - 20, bedX - 105 + i * 50, arrowY - 15);
+                p.line(bedX - 100 + i * 50, arrowY - 20, bedX - 95 + i * 50, arrowY - 15);
+            }
+            p.fill(100, 150, 255);
+            p.noStroke();
+            p.textSize(11);
+            p.text('Backwash Flow ↑', bedX, bedY + bedHeight + 80);
+        }
+
+        // Graph: Head Loss vs Time (bottom right)
+        if (state.mode === 'filter') {
+            const graphX = 50;
+            const graphY = CONFIG.canvasHeight - 200;
+            const graphWidth = CONFIG.canvasWidth - 100;
+            const graphHeight = 120;
+
+            p.stroke(100, 100, 100);
+            p.strokeWeight(1);
+            p.noFill();
+            p.rect(graphX, graphY, graphWidth, graphHeight);
+
+            p.fill(232, 232, 232);
+            p.noStroke();
+            p.textSize(12);
+            p.text('Head Loss vs Run Time', graphX, graphY - 10);
+
+            // Exponential curve
+            p.stroke(0, 255, 136);
+            p.strokeWeight(2);
+            p.noFill();
+            p.beginShape();
+            for (let t = 0; t <= 48; t++) {
+                const porosity = calculatePorosityReduction(t, state.filtrationRate);
+                const hl = calculateHeadLoss(porosity, state.filtrationRate, 15);
+                const x = p.map(t, 0, 48, graphX, graphX + graphWidth);
+                const y = p.map(hl, 0, 15, graphY + graphHeight, graphY);
+                p.vertex(x, y);
+            }
+            p.endShape();
+
+            // Terminal head loss line
+            p.stroke(255, 68, 68);
+            p.strokeWeight(1);
+            p.line(graphX, p.map(10, 0, 15, graphY + graphHeight, graphY),
+                   graphX + graphWidth, p.map(10, 0, 15, graphY + graphHeight, graphY));
+
+            // Current position
+            const currentX = p.map(state.runTime, 0, 48, graphX, graphX + graphWidth);
+            const currentY = p.map(state.headLoss, 0, 15, graphY + graphHeight, graphY);
+            p.fill(255, 200, 0);
+            p.noStroke();
+            p.circle(currentX, currentY, 8);
+        }
+    };
+};
+
+new p5(sketch);
+
+// --- UI HANDLERS ---
+document.getElementById('filtrationRate').addEventListener('input', (e) => {
+    state.filtrationRate = parseFloat(e.target.value);
+    updateUI();
+});
+
+document.getElementById('runTime').addEventListener('input', (e) => {
+    state.runTime = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('backwashRate').addEventListener('input', (e) => {
+    state.backwashRate = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('temperature').addEventListener('input', (e) => {
+    state.temperature = parseInt(e.target.value);
+    updateUI();
+});
+
+document.getElementById('mediaType').addEventListener('change', (e) => {
+    state.mediaType = e.target.value;
+    updateUI();
+});
+
+function resetSimulation() {
+    state.filtrationRate = 3.0;
+    state.runTime = 0;
+    state.backwashRate = 15;
+    state.temperature = 15;
+    state.mediaType = 'dual';
+    state.porosity = 0.40;
+    state.headLoss = 2.0;
+    state.turbidity = 0.05;
+    state.mode = 'filter';
+
+    document.getElementById('filtrationRate').value = 3.0;
+    document.getElementById('runTime').value = 0;
+    document.getElementById('backwashRate').value = 15;
+    document.getElementById('temperature').value = 15;
+    document.getElementById('mediaType').value = 'dual';
+
+    setMode('filter');
+    updateUI();
+}
+
+// Initial UI update
+updateUI();
+    </script>
+</body>
+</html>

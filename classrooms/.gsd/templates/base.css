@@ -1,0 +1,144 @@
+/* 
+  Water Treatment Operator Digital Classroom — Global Styles
+  Design North Star: "Khan Academy clarity meets Industrial SCADA authenticity"
+*/
+
+:root {
+  --bg-color: #1a1a2e;
+  --panel-bg: #16213e;
+  --accent-safe: #00ff88;
+  --accent-warning: #ffaa00;
+  --accent-danger: #ff4444;
+  --text-primary: #e8e8e8;
+  --text-secondary: #888888;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  overflow: hidden; /* Multi-panel grid will handle scrolling */
+}
+
+#app-container {
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "control visual"
+    "footer footer";
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 40% 60%;
+  height: 100vh;
+}
+
+header {
+  grid-area: header;
+  padding: 15px 20px;
+  background: var(--panel-bg);
+  border-bottom: 2px solid #242f4b;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 22px;
+  color: var(--accent-safe);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+header h2 {
+  margin: 5px 0 0 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: normal;
+}
+
+#control-room {
+  grid-area: control;
+  background: var(--panel-bg);
+  padding: 20px;
+  overflow-y: auto;
+  border-right: 2px solid #242f4b;
+  box-shadow: inset -5px 0 15px rgba(0, 0, 0, 0.2);
+}
+
+#microscope {
+  grid-area: visual;
+  position: relative;
+  background: var(--bg-color);
+}
+
+footer {
+  grid-area: footer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: var(--panel-bg);
+  border-top: 2px solid #242f4b;
+  font-size: 13px;
+}
+
+.analogy-box {
+  flex: 1;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding-right: 20px;
+}
+
+.analogy-box strong {
+  color: var(--accent-safe);
+  font-style: normal;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 15px;
+}
+
+button {
+  background: #242f4b;
+  color: var(--text-primary);
+  border: 1px solid #3d4a6d;
+  padding: 8px 15px;
+    color: var(--warning);
+    font-style: italic;
+}
+.btn {
+    background: transparent;
+    border: 1px solid var(--accent-safe);
+    color: var(--accent-safe);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: var(--ui-font);
+    font-size: 0.8rem;
+    transition: var(--transition-fast);
+}
+
+.btn:hover {
+    background: var(--accent-safe);
+    color: var(--bg-deep);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+}
+
+.tooltip-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background: var(--text-secondary);
+  color: var(--panel-bg);
+  border-radius: 50%;
+  text-align: center;
+  line-height: 16px;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: help;
+  margin-left: 5px;
+}
+
+.tooltip-icon:hover {
+  background: var(--accent-safe);
+}
