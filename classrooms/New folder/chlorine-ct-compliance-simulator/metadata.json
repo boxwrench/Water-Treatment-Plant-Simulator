@@ -1,0 +1,5 @@
+{
+  "name": "Chlorine CT Compliance Simulator",
+  "description": "A high-fidelity engineering tool for simulating chlorine contact time (CT) compliance based on EPA Giardia 3-log inactivation standards, featuring a real-time 3D tank visualizer.",
+  "requestFramePermissions": []
+}

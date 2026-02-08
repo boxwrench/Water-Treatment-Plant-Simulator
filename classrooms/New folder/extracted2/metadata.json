@@ -1,0 +1,5 @@
+{
+  "name": "WTP Death Spiral Simulator",
+  "description": "A high-fidelity SCADA-style simulation demonstrating cascading failures in a Water Treatment Plant due to backwash bottlenecks and hydraulic overload.",
+  "requestFramePermissions": []
+}

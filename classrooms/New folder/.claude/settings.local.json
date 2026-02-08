@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(unzip:*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "WebFetch(domain:unpkg.com)",
+      "Bash(curl:*)"
+    ]
+  }
+}

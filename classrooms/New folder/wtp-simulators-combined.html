@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WTP Simulators Suite - All-in-One</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      overflow: hidden;
+      background-color: #0f172a;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .scada-border {
+      border: 1px solid #444;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    }
+    .status-flash {
+      animation: pulse-red 1s infinite alternate;
+    }
+    @keyframes pulse-red {
+      from { background-color: #ef4444; box-shadow: 0 0 5px #ef4444; }
+      to { background-color: #7f1d1d; box-shadow: 0 0 20px #ef4444; }
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1a1a1a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #666;
+    }
+    .tab-button {
+      padding: 1rem 2rem;
+      cursor: pointer;
+      background-color: #1e293b;
+      border: none;
+      color: #94a3b8;
+      font-weight: 600;
+      transition: all 0.3s;
+      border-bottom: 3px solid transparent;
+    }
+    .tab-button:hover {
+      background-color: #334155;
+      color: #e2e8f0;
+    }
+    .tab-button.active {
+      background-color: #0f172a;
+      color: #3b82f6;
+      border-bottom-color: #3b82f6;
+    }
+    .tab-content {
+      display: none;
+      height: calc(100vh - 60px);
+    }
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "react/": "https://esm.sh/react@^19.2.3/",
+      "react": "https://esm.sh/react@^19.2.3",
+      "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+      "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+      "three": "https://esm.sh/three@^0.182.0",
+      "@react-three/drei": "https://esm.sh/@react-three/drei@^10.7.7",
+      "@react-three/fiber": "https://esm.sh/@react-three/fiber@^9.5.0"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- Navigation Tabs -->
+  <div style="background-color: #1e293b; display: flex; gap: 0;">
+    <button class="tab-button active" onclick="switchTab('ct-sim')">Chlorine CT Compliance</button>
+    <button class="tab-button" onclick="switchTab('death-spiral')">Death Spiral Simulator</button>
+    <button class="tab-button" onclick="switchTab('filter-spread')">Filter Spread Simulator</button>
+  </div>
+
+  <!-- Tab Content Areas -->
+  <div id="ct-sim" class="tab-content active">
+    <div id="ct-root"></div>
+  </div>
+  <div id="death-spiral" class="tab-content">
+    <div id="death-root"></div>
+  </div>
+  <div id="filter-spread" class="tab-content">
+    <div id="filter-root"></div>
+  </div>
+
+  <script>
+    function switchTab(tabId) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+
+      // Show selected tab
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+    }
+  </script>
+
+  <!-- ============================================ -->
+  <!-- CHLORINE CT COMPLIANCE SIMULATOR -->
+  <!-- ============================================ -->
+  <script type="text/babel" data-type="module">
+    import React, { useState, useMemo, useRef, useEffect } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { Canvas, useFrame } from '@react-three/fiber';
+    import { OrbitControls } from '@react-three/drei';
+    import { AlertCircle, Droplets, ThermometerSun, FlaskConical, Clock, Gauge } from 'lucide-react';
+    import * as THREE from 'three';
+
+    // Types
+    const SimulationParams = {};
+    const SimulationResult = {};
+
+    // Calculate CT Compliance
+    function calculateCompliance(params) {
+      const t10 = (params.tankVolume / params.flowRate) * params.baffleFactor * 60;
+
+      const tempIndex = [0.5, 1, 5, 10, 15, 20, 25].findIndex(t => params.temperature <= t);
+      const pHIndex = [6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0].findIndex(p => params.pH <= p);
+
+      const ctTable = [
+        [165, 235, 338, 488],
+        [117, 165, 238, 342],
+        [73, 103, 149, 214],
+        [53, 75, 107, 154],
+        [39, 55, 79, 113],
+        [28, 39, 56, 81],
+        [20, 28, 40, 58]
+      ];
+
+      const baseRequiredCT = ctTable[Math.max(0, tempIndex)][2] || 149;
+      const requiredCT = baseRequiredCT * (pHIndex > 5 ? 1 + (pHIndex - 5) * 0.3 : 1);
+      const actualCT = params.freeChlorine * t10;
+      const ratio = actualCT / requiredCT;
+
+      return {
+        t10,
+        requiredCT,
+        actualCT,
+        ratio,
+        isCompliant: ratio >= 1.0
+      };
+    }
+
+    // Sidebar Component
+    function Sidebar({ params, onChange }) {
+      const handleChange = (key, value) => {
+        onChange({ ...params, [key]: parseFloat(value) });
+      };
+
+      return (
+        <aside className="w-80 bg-slate-900 border-r border-slate-700 p-6 overflow-y-auto">
+          <header className="mb-8">
+            <h1 className="text-2xl font-bold text-blue-400 mb-2">CT Compliance</h1>
+            <p className="text-xs text-slate-500 uppercase tracking-wider">EPA Surface Water Treatment</p>
+          </header>
+
+          <div className="space-y-6">
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-300 mb-2">
+                <Droplets size={16} className="text-blue-400" />
+                Flow Rate (MGD)
+              </label>
+              <input type="range" min="0.1" max="20" step="0.1" value={params.flowRate}
+                onChange={(e) => handleChange('flowRate', e.target.value)}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+              <span className="mono text-blue-300 text-sm font-bold">{params.flowRate.toFixed(1)}</span>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-300 mb-2">
+                <Gauge size={16} className="text-cyan-400" />
+                Tank Volume (gal)
+              </label>
+              <input type="range" min="10000" max="1000000" step="10000" value={params.tankVolume}
+                onChange={(e) => handleChange('tankVolume', e.target.value)}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
+              <span className="mono text-cyan-300 text-sm font-bold">{params.tankVolume.toLocaleString()}</span>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-300 mb-2">
+                <Clock size={16} className="text-purple-400" />
+                Baffle Factor
+              </label>
+              <input type="range" min="0.1" max="1.0" step="0.05" value={params.baffleFactor}
+                onChange={(e) => handleChange('baffleFactor', e.target.value)}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500" />
+              <span className="mono text-purple-300 text-sm font-bold">{params.baffleFactor.toFixed(2)}</span>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-300 mb-2">
+                <FlaskConical size={16} className="text-green-400" />
+                Free Chlorine (mg/L)
+              </label>
+              <input type="range" min="0.1" max="5.0" step="0.1" value={params.freeChlorine}
+                onChange={(e) => handleChange('freeChlorine', e.target.value)}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-green-500" />
+              <span className="mono text-green-300 text-sm font-bold">{params.freeChlorine.toFixed(1)}</span>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-300 mb-2">
+                <ThermometerSun size={16} className="text-orange-400" />
+                Temperature (°C)
+              </label>
+              <input type="range" min="0.5" max="25" step="0.5" value={params.temperature}
+                onChange={(e) => handleChange('temperature', e.target.value)}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-orange-500" />
+              <span className="mono text-orange-300 text-sm font-bold">{params.temperature.toFixed(1)}</span>
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold text-slate-300 mb-2 block">pH</label>
+              <input type="range" min="6.0" max="10.0" step="0.1" value={params.pH}
+                onChange={(e) => handleChange('pH', e.target.value)}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500" />
+              <span className="mono text-pink-300 text-sm font-bold">{params.pH.toFixed(1)}</span>
+            </div>
+          </div>
+        </aside>
+      );
+    }
+
+    // Dashboard Component
+    function Dashboard({ result }) {
+      return (
+        <div className="grid grid-cols-4 gap-6">
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">T10 Detention Time</div>
+            <div className="mono text-3xl font-bold text-blue-400">{result.t10.toFixed(1)} <span className="text-sm text-slate-500">min</span></div>
+          </div>
+
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Required CT</div>
+            <div className="mono text-3xl font-bold text-cyan-400">{result.requiredCT.toFixed(0)} <span className="text-sm text-slate-500">mg·min/L</span></div>
+          </div>
+
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Actual CT</div>
+            <div className={`mono text-3xl font-bold ${result.isCompliant ? 'text-green-400' : 'text-rose-400'}`}>
+              {result.actualCT.toFixed(0)} <span className="text-sm text-slate-500">mg·min/L</span>
+            </div>
+          </div>
+
+          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">CT Ratio</div>
+            <div className={`mono text-3xl font-bold ${result.isCompliant ? 'text-green-400' : 'text-rose-400'}`}>
+              {result.ratio.toFixed(2)}x
+            </div>
+            <div className={`text-xs font-bold mt-2 ${result.isCompliant ? 'text-green-400' : 'text-rose-400'}`}>
+              {result.isCompliant ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 3D Visualizer Component
+    function WaterParticles({ count = 200, speed = 0.5 }) {
+      const points = useRef();
+      const positions = useMemo(() => {
+        const pos = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+          pos[i * 3] = (Math.random() - 0.5) * 8;
+          pos[i * 3 + 1] = (Math.random() - 0.5) * 4;
+          pos[i * 3 + 2] = (Math.random() - 0.5) * 8;
+        }
+        return pos;
+      }, [count]);
+
+      useFrame((state, delta) => {
+        if (!points.current) return;
+        const pos = points.current.geometry.attributes.position.array;
+        for (let i = 0; i < count; i++) {
+          pos[i * 3 + 2] += speed * delta;
+          if (pos[i * 3 + 2] > 4) pos[i * 3 + 2] = -4;
+        }
+        points.current.geometry.attributes.position.needsUpdate = true;
+      });
+
+      return (
+        <points ref={points}>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
+          </bufferGeometry>
+          <pointsMaterial size={0.1} color="#3b82f6" transparent opacity={0.6} />
+        </points>
+      );
+    }
+
+    function Visualizer({ params, result }) {
+      return (
+        <div className="bg-slate-800/30 border border-slate-700 rounded-xl overflow-hidden h-full">
+          <Canvas camera={{ position: [8, 6, 8], fov: 50 }}>
+            <color attach="background" args={['#0f172a']} />
+            <ambientLight intensity={0.3} />
+            <pointLight position={[10, 10, 10]} intensity={0.8} />
+            <pointLight position={[-10, -10, -10]} intensity={0.4} color="#3b82f6" />
+
+            <mesh position={[0, 0, 0]}>
+              <boxGeometry args={[8, 4, 8]} />
+              <meshStandardMaterial color="#1e293b" transparent opacity={0.3} wireframe />
+            </mesh>
+
+            <mesh position={[-3, 0, 0]}>
+              <boxGeometry args={[0.2, 4, 8]} />
+              <meshStandardMaterial color="#64748b" opacity={0.7} transparent />
+            </mesh>
+            <mesh position={[3, 0, 0]}>
+              <boxGeometry args={[0.2, 4, 8]} />
+              <meshStandardMaterial color="#64748b" opacity={0.7} transparent />
+            </mesh>
+
+            <WaterParticles count={300} speed={params.flowRate / 10} />
+
+            <OrbitControls enablePan={false} minDistance={10} maxDistance={20} />
+          </Canvas>
+        </div>
+      );
+    }
+
+    // Main App
+    function CTApp() {
+      const [params, setParams] = useState({
+        flowRate: 5.0,
+        tankVolume: 250000,
+        baffleFactor: 0.5,
+        freeChlorine: 1.0,
+        temperature: 15.0,
+        pH: 7.5,
+      });
+
+      const result = useMemo(() => calculateCompliance(params), [params]);
+      const isExtremeConditions = params.temperature <= 1 || params.pH >= 10;
+
+      return (
+        <div className="flex h-full bg-slate-950 text-slate-200 overflow-hidden">
+          <Sidebar params={params} onChange={setParams} />
+          <main className="flex-1 flex flex-col p-8 overflow-hidden">
+            {isExtremeConditions && (
+              <div className="mb-4 bg-rose-500/20 border border-rose-500/50 p-3 rounded-xl flex items-center gap-3 animate-pulse">
+                <AlertCircle className="text-rose-500" />
+                <span className="text-rose-200 text-xs font-bold uppercase tracking-wider">
+                  Extreme Conditions Warning: High pH or Low Temp significantly increases required CT.
+                </span>
+              </div>
+            )}
+            <section className="mb-8 shrink-0">
+              <Dashboard result={result} />
+            </section>
+            <section className="flex-1 min-h-0">
+              <Visualizer params={params} result={result} />
+            </section>
+            <footer className="mt-6 flex justify-between items-center text-[10px] font-bold text-slate-600 uppercase tracking-widest shrink-0">
+              <div className="flex gap-6">
+                <span>Model: EPA-GIARDIA-3L-1991</span>
+                <span>Calc Mode: Empirical Lookup Approximation</span>
+              </div>
+              <div>TRACER STUDY 2.0 SIMULATOR</div>
+            </footer>
+          </main>
+        </div>
+      );
+    }
+
+    const ctRoot = createRoot(document.getElementById('ct-root'));
+    ctRoot.render(<CTApp />);
+  </script>
+
+  <!-- ============================================ -->
+  <!-- DEATH SPIRAL SIMULATOR -->
+  <!-- ============================================ -->
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect, useRef, useCallback } from 'react';
+    import { createRoot } from 'react-dom/client';
+
+    const FilterStatus = {
+      ONLINE: 'ONLINE',
+      OFFLINE_QUEUED: 'OFFLINE_QUEUED',
+      BACKWASHING: 'BACKWASHING',
+      OFFLINE_MANUAL: 'OFFLINE_MANUAL'
+    };
+
+    const TOTAL_FILTERS = 10;
+    const TARGET_PLANT_FLOW = 100;
+    const MAX_HYDRAULIC_CAPACITY = 20;
+    const BACKWASH_DURATION = 0.5;
+    const HEADLOSS_LIMIT = 10.0;
+    const TURBIDITY_LIMIT = 0.10;
+    const RUNTIME_LIMIT = 72.0;
+
+    function FilterRow({ filter, onToggle }) {
+      const getStatusColor = () => {
+        switch (filter.status) {
+          case FilterStatus.ONLINE: return 'bg-green-600';
+          case FilterStatus.BACKWASHING: return 'bg-blue-600 animate-pulse';
+          case FilterStatus.OFFLINE_QUEUED: return 'bg-yellow-600';
+          case FilterStatus.OFFLINE_MANUAL: return 'bg-gray-600';
+          default: return 'bg-gray-600';
+        }
+      };
+
+      return (
+        <div className="grid grid-cols-6 border-b border-[#333] py-2 items-center text-sm hover:bg-[#2a2a2a] transition-colors">
+          <div className="flex items-center gap-2 pl-4">
+            <div className={`w-3 h-3 rounded-full ${getStatusColor()}`} />
+            <span className="font-bold text-white">Filter {filter.id}</span>
+            <span className="text-xs text-gray-500">{filter.status}</span>
+          </div>
+          <div className="text-right mono text-cyan-400 font-bold">{filter.flow.toFixed(1)}</div>
+          <div className="text-right mono">
+            <span className={filter.headloss >= HEADLOSS_LIMIT * 0.8 ? 'text-red-400 font-bold' : 'text-white'}>
+              {filter.headloss.toFixed(1)}
+            </span>
+          </div>
+          <div className="text-right mono">
+            <span className={filter.turbidity >= TURBIDITY_LIMIT * 0.8 ? 'text-red-400 font-bold' : 'text-white'}>
+              {filter.turbidity.toFixed(3)}
+            </span>
+          </div>
+          <div className="text-right mono">
+            <span className={filter.runtime >= RUNTIME_LIMIT * 0.9 ? 'text-orange-400 font-bold' : 'text-white'}>
+              {filter.runtime.toFixed(1)}
+            </span>
+          </div>
+          <div className="text-center">
+            {(filter.status === FilterStatus.ONLINE || filter.status === FilterStatus.OFFLINE_MANUAL) && (
+              <button onClick={onToggle}
+                className="px-3 py-1 text-xs border border-gray-500 hover:bg-gray-700 transition-colors">
+                {filter.status === FilterStatus.ONLINE ? 'OFFLINE' : 'ONLINE'}
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function LogPanel({ logs }) {
+      return (
+        <div className="scada-border bg-[#222] p-4 flex-1 flex flex-col min-h-0">
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Event Log</h3>
+          <div className="flex-1 overflow-y-auto font-mono text-xs space-y-1">
+            {logs.map(log => (
+              <div key={log.id} className={`${log.type === 'CRITICAL' ? 'text-red-400' : log.type === 'WARNING' ? 'text-yellow-400' : 'text-gray-400'}`}>
+                {log.message}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function Dashboard({ stats, simTime, onRestart }) {
+      const flowPercent = (stats.actualFlow / stats.targetFlow) * 100;
+      const isUnderflow = flowPercent < 95;
+
+      return (
+        <div className="scada-border bg-[#222] p-6">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h1 className="text-2xl font-bold text-white mb-1">WTP Death Spiral Simulator</h1>
+              <p className="text-xs text-gray-500 uppercase tracking-wider">10 Filter Plant - 100 MGD Target</p>
+            </div>
+            <button onClick={onRestart}
+              className="px-4 py-2 bg-red-600 text-white font-bold hover:bg-red-700 transition-colors text-xs uppercase">
+              Restart
+            </button>
+          </div>
+
+          <div className="grid grid-cols-5 gap-4">
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Sim Time</div>
+              <div className="mono text-2xl font-bold text-white">{simTime.toFixed(1)} hrs</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Plant Flow</div>
+              <div className={`mono text-2xl font-bold ${isUnderflow ? 'text-red-400' : 'text-green-400'}`}>
+                {stats.actualFlow.toFixed(1)} MGD
+              </div>
+              <div className="text-xs text-gray-400">{flowPercent.toFixed(0)}% of target</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Avg Turbidity</div>
+              <div className="mono text-2xl font-bold text-cyan-400">{stats.avgTurbidity.toFixed(3)} NTU</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Active Filters</div>
+              <div className={`mono text-2xl font-bold ${stats.activeCount < 5 ? 'text-red-400 animate-pulse' : 'text-green-400'}`}>
+                {stats.activeCount} / {TOTAL_FILTERS}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Backwash Queue</div>
+              <div className="mono text-2xl font-bold text-yellow-400">
+                {stats.backwashQueueSize}
+                {stats.currentBackwashingId && ` (${stats.currentBackwashingId})`}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function DeathSpiralApp() {
+      const [filters, setFilters] = useState([]);
+      const [simTime, setSimTime] = useState(0);
+      const [timeScale, setTimeScale] = useState(1);
+      const [logs, setLogs] = useState([]);
+      const [backwashQueue, setBackwashQueue] = useState([]);
+      const [currentBackwashId, setCurrentBackwashId] = useState(null);
+      const [backwashTimer, setBackwashTimer] = useState(0);
+      const [failureMessage, setFailureMessage] = useState(null);
+      const [isPaused, setIsPaused] = useState(false);
+
+      const requestRef = useRef();
+      const lastUpdateRef = useRef(0);
+
+      useEffect(() => {
+        const initialFilters = Array.from({ length: TOTAL_FILTERS }, (_, i) => ({
+          id: i + 1,
+          status: FilterStatus.ONLINE,
+          flow: TARGET_PLANT_FLOW / TOTAL_FILTERS,
+          headloss: 1.0,
+          turbidity: 0.02,
+          runtime: i * 6.0,
+          isBreakingThrough: false,
+          breakthroughTime: 0
+        }));
+        setFilters(initialFilters);
+      }, []);
+
+      const addLog = useCallback((message, type = 'INFO', t) => {
+        const timestamp = t.toFixed(2);
+        setLogs(prev => [{
+          id: Math.random().toString(36).substr(2, 9),
+          simTime: t,
+          message: `[T=${timestamp}] ${message}`,
+          type
+        }, ...prev].slice(0, 50));
+      }, []);
+
+      const updateModel = useCallback((dt) => {
+        if (failureMessage || isPaused) return;
+
+        setSimTime(prevTime => {
+          const nextTime = prevTime + dt;
+
+          setFilters(prevFilters => {
+            const onlineFilters = prevFilters.filter(f => f.status === FilterStatus.ONLINE);
+            const onlineCount = onlineFilters.length;
+
+            if (onlineCount === 0) {
+              setFailureMessage("CRITICAL FAILURE: TOTAL PLANT SHUTDOWN");
+              return prevFilters;
+            }
+
+            const flowPerFilter = TARGET_PLANT_FLOW / onlineCount;
+
+            if (flowPerFilter > MAX_HYDRAULIC_CAPACITY) {
+              setFailureMessage(`CRITICAL FAILURE: HYDRAULIC OVERLOAD (${flowPerFilter.toFixed(1)} MGD/filter)`);
+              return prevFilters;
+            }
+
+            const newFilters = prevFilters.map(f => {
+              if (f.status !== FilterStatus.ONLINE) {
+                return { ...f, flow: 0 };
+              }
+
+              const newRuntime = f.runtime + dt;
+              const headlossRate = 0.125 * (flowPerFilter / 10);
+              const newHeadloss = f.headloss + (headlossRate * dt);
+
+              let newTurbidity = f.turbidity;
+              let isBreakingThrough = f.isBreakingThrough;
+              let breakthroughTime = f.breakthroughTime;
+
+              if (!isBreakingThrough && flowPerFilter > 15 && newRuntime > 40) {
+                isBreakingThrough = true;
+                addLog(`Filter ${f.id} Breakthrough Started (High Flow + Age)`, 'WARNING', nextTime);
+              }
+
+              if (isBreakingThrough) {
+                breakthroughTime += dt;
+                const progress = Math.min(breakthroughTime / 0.5, 1);
+                newTurbidity = 0.02 + (Math.pow(progress, 2) * 0.13);
+              }
+
+              return {
+                ...f,
+                flow: flowPerFilter,
+                runtime: newRuntime,
+                headloss: newHeadloss,
+                turbidity: newTurbidity,
+                isBreakingThrough,
+                breakthroughTime
+              };
+            });
+
+            const filtersToQueue = [];
+            const processedFilters = newFilters.map(f => {
+              if (f.status === FilterStatus.ONLINE) {
+                let failed = false;
+                let reason = '';
+
+                if (f.headloss >= HEADLOSS_LIMIT) { failed = true; reason = 'Headloss Limit'; }
+                else if (f.turbidity >= TURBIDITY_LIMIT) { failed = true; reason = 'Turbidity Limit'; }
+                else if (f.runtime >= RUNTIME_LIMIT) { failed = true; reason = 'Runtime Limit'; }
+
+                if (failed) {
+                  filtersToQueue.push(f.id);
+                  addLog(`Filter ${f.id} OFFLINE (${reason})`, 'WARNING', nextTime);
+                  return { ...f, status: FilterStatus.OFFLINE_QUEUED, flow: 0 };
+                }
+              }
+              return f;
+            });
+
+            if (filtersToQueue.length > 0) {
+              setBackwashQueue(prev => [...prev, ...filtersToQueue]);
+            }
+
+            return processedFilters;
+          });
+
+          setBackwashTimer(prevTimer => {
+            let currentId = currentBackwashId;
+            let queue = [...backwashQueue];
+            let timer = prevTimer;
+
+            if (currentId === null && queue.length > 0) {
+              currentId = queue.shift() || null;
+              timer = BACKWASH_DURATION;
+              setCurrentBackwashId(currentId);
+              setBackwashQueue(queue);
+
+              if (currentId !== null) {
+                addLog(`Filter ${currentId} started BACKWASH`, 'INFO', nextTime);
+                setFilters(prev => prev.map(f => f.id === currentId ? { ...f, status: FilterStatus.BACKWASHING, flow: 0 } : f));
+              }
+            }
+
+            if (currentId !== null) {
+              timer -= dt;
+              if (timer <= 0) {
+                addLog(`Filter ${currentId} BACKWASH COMPLETE`, 'INFO', nextTime);
+                setFilters(prev => prev.map(f => f.id === currentId ? {
+                  ...f,
+                  status: FilterStatus.ONLINE,
+                  headloss: 1.0,
+                  turbidity: 0.02,
+                  runtime: 0,
+                  isBreakingThrough: false,
+                  breakthroughTime: 0
+                } : f));
+                setCurrentBackwashId(null);
+                return 0;
+              }
+            }
+
+            return timer;
+          });
+
+          return nextTime;
+        });
+      }, [currentBackwashId, backwashQueue, failureMessage, isPaused, addLog]);
+
+      const animate = useCallback((time) => {
+        if (lastUpdateRef.current !== undefined) {
+          const deltaTimeMs = time - lastUpdateRef.current;
+          const simDelta = (deltaTimeMs / 1000) * (timeScale / 100);
+          updateModel(simDelta);
+        }
+        lastUpdateRef.current = time;
+        requestRef.current = requestAnimationFrame(animate);
+      }, [timeScale, updateModel]);
+
+      useEffect(() => {
+        requestRef.current = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(requestRef.current);
+      }, [animate]);
+
+      const handleToggleManual = (id) => {
+        setFilters(prev => prev.map(f => {
+          if (f.id === id) {
+            const newStatus = f.status === FilterStatus.OFFLINE_MANUAL ? FilterStatus.ONLINE : FilterStatus.OFFLINE_MANUAL;
+            addLog(`Filter ${id} toggled ${newStatus}`, 'INFO', simTime);
+            return { ...f, status: newStatus };
+          }
+          return f;
+        }));
+      };
+
+      const restartSim = () => {
+        setSimTime(0);
+        setFailureMessage(null);
+        setLogs([]);
+        setBackwashQueue([]);
+        setCurrentBackwashId(null);
+        setBackwashTimer(0);
+        const initialFilters = Array.from({ length: TOTAL_FILTERS }, (_, i) => ({
+          id: i + 1,
+          status: FilterStatus.ONLINE,
+          flow: TARGET_PLANT_FLOW / TOTAL_FILTERS,
+          headloss: 1.0,
+          turbidity: 0.02,
+          runtime: i * 6.0,
+          isBreakingThrough: false,
+          breakthroughTime: 0
+        }));
+        setFilters(initialFilters);
+      };
+
+      const plantStats = {
+        targetFlow: TARGET_PLANT_FLOW,
+        actualFlow: filters.reduce((acc, f) => acc + (f.status === FilterStatus.ONLINE ? f.flow : 0), 0),
+        avgTurbidity: filters.filter(f => f.status === FilterStatus.ONLINE).length > 0
+          ? filters.filter(f => f.status === FilterStatus.ONLINE).reduce((acc, f) => acc + f.turbidity, 0) / filters.filter(f => f.status === FilterStatus.ONLINE).length
+          : 0,
+        activeCount: filters.filter(f => f.status === FilterStatus.ONLINE).length,
+        backwashQueueSize: backwashQueue.length,
+        currentBackwashingId: currentBackwashId,
+        failureMessage
+      };
+
+      return (
+        <div className="flex flex-col h-full p-4 gap-4 bg-[#1a1a1a] text-white" style={{fontFamily: 'JetBrains Mono, monospace'}}>
+          <Dashboard stats={plantStats} simTime={simTime} onRestart={restartSim} />
+
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
+            <div className="lg:col-span-3 scada-border bg-[#222] p-4 flex flex-col min-h-0 overflow-auto">
+              <div className="grid grid-cols-6 border-b border-[#444] pb-2 mb-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                <div className="pl-4">Status</div>
+                <div className="text-right">Flow (MGD)</div>
+                <div className="text-right">Headloss (ft)</div>
+                <div className="text-right">Turbidity (NTU)</div>
+                <div className="text-right">Runtime (hrs)</div>
+                <div className="text-center">Control</div>
+              </div>
+              <div className="flex-1 overflow-y-auto pr-2">
+                {filters.map(filter => (
+                  <FilterRow
+                    key={filter.id}
+                    filter={filter}
+                    onToggle={() => handleToggleManual(filter.id)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4 min-h-0">
+              <div className="scada-border bg-[#222] p-4 flex flex-col gap-4">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Simulation Control</h3>
+                <div className="space-y-2">
+                  <label className="text-[10px] text-gray-400">Time Compression: {timeScale}x</label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="1000"
+                    value={timeScale}
+                    onChange={(e) => setTimeScale(parseInt(e.target.value))}
+                    className="w-full h-1 bg-[#444] rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  />
+                  <button
+                    onClick={() => setIsPaused(!isPaused)}
+                    className={`w-full py-1 text-xs font-bold uppercase border transition-colors ${isPaused ? 'border-green-500 text-green-500 hover:bg-green-500/10' : 'border-yellow-500 text-yellow-500 hover:bg-yellow-500/10'}`}
+                  >
+                    {isPaused ? 'Resume Simulation' : 'Pause Simulation'}
+                  </button>
+                </div>
+              </div>
+
+              <LogPanel logs={logs} />
+            </div>
+          </div>
+
+          {failureMessage && (
+            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50">
+              <div className="scada-border bg-[#1a1a1a] p-12 text-center max-w-xl border-red-600 border-2">
+                <h1 className="text-4xl font-bold text-red-600 mb-4 animate-pulse">SYSTEM HALTED</h1>
+                <p className="text-xl text-gray-300 mb-8">{failureMessage}</p>
+                <button
+                  onClick={restartSim}
+                  className="px-8 py-3 bg-red-600 text-white font-bold hover:bg-red-700 transition-colors uppercase"
+                >
+                  Reset Plant Environment
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const deathRoot = createRoot(document.getElementById('death-root'));
+    deathRoot.render(<DeathSpiralApp />);
+  </script>
+
+  <!-- ============================================ -->
+  <!-- FILTER SPREAD SIMULATOR -->
+  <!-- ============================================ -->
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect, useRef, useCallback } from 'react';
+    import { createRoot } from 'react-dom/client';
+
+    const FilterState = {
+      ONLINE: 'ONLINE',
+      OFFLINE_MANUAL: 'OFFLINE_MANUAL',
+      OFFLINE_QUEUED: 'OFFLINE_QUEUED',
+      BACKWASHING: 'BACKWASHING'
+    };
+
+    const CONSTANTS = {
+      TOTAL_FILTERS: 10,
+      TOTAL_FLOW_TARGET: 100,
+      MAX_HYDRAULIC_CAP: 20,
+      BACKWASH_DURATION_HRS: 0.5,
+      INITIAL_STAGGER_HRS: 6,
+      BASE_HEADLOSS_RATE: 0.125,
+      LIMIT_HEADLOSS: 10.0,
+      LIMIT_TURBIDITY: 0.10,
+      LIMIT_RUNTIME: 72.0,
+      BREAKTHROUGH_THRESHOLD_MGD: 15,
+      BREAKTHROUGH_THRESHOLD_HRS: 40
+    };
+
+    function ScadaHeader({ simTime, onlineCount, isWashing, activeBackwashId, speed, onSetSpeed }) {
+      return (
+        <div className="bg-neutral-900 border-b-2 border-neutral-700 px-6 py-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-black text-white tracking-tight">WTP FILTER SPREAD SIMULATOR</h1>
+            <p className="text-xs text-neutral-500 mt-1">100 MGD TREATMENT FACILITY - 10 FILTER ARRAY</p>
+          </div>
+          <div className="flex gap-6 items-center">
+            <div>
+              <div className="text-xs text-neutral-500">SIM TIME</div>
+              <div className="text-2xl font-bold text-cyan-400 mono">{simTime}</div>
+            </div>
+            <div>
+              <div className="text-xs text-neutral-500">ONLINE FILTERS</div>
+              <div className={`text-2xl font-bold mono ${onlineCount < 5 ? 'text-red-500' : 'text-green-400'}`}>
+                {onlineCount} / {CONSTANTS.TOTAL_FILTERS}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-neutral-500">BACKWASH STATUS</div>
+              <div className={`text-sm font-bold ${isWashing ? 'text-blue-400' : 'text-neutral-600'}`}>
+                {isWashing ? `ACTIVE (F${activeBackwashId})` : 'IDLE'}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {[0, 1, 5, 20].map(s => (
+                <button key={s} onClick={() => onSetSpeed(s)}
+                  className={`px-3 py-1 text-xs font-bold border transition-colors ${speed === s ? 'bg-blue-600 border-blue-600 text-white' : 'border-neutral-600 text-neutral-400 hover:border-neutral-400'}`}>
+                  {s}x
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function FilterRow({ filter, isQueued, onToggle, onWash }) {
+      const getStateColor = () => {
+        switch (filter.state) {
+          case FilterState.ONLINE: return 'bg-green-600';
+          case FilterState.BACKWASHING: return 'bg-blue-600';
+          case FilterState.OFFLINE_QUEUED: return 'bg-yellow-600';
+          case FilterState.OFFLINE_MANUAL: return 'bg-neutral-600';
+          default: return 'bg-neutral-700';
+        }
+      };
+
+      const headlossPercent = (filter.headlossFt / CONSTANTS.LIMIT_HEADLOSS) * 100;
+
+      return (
+        <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-neutral-800 hover:bg-neutral-900/50 transition-colors items-center">
+          <div className="col-span-1 mono text-white font-bold text-lg">F{filter.id}</div>
+          <div className="col-span-1">
+            <div className={`w-3 h-3 rounded-full ${getStateColor()}`} />
+          </div>
+          <div className="col-span-2 mono text-cyan-400 font-bold">{filter.flowMgd.toFixed(1)} MGD</div>
+          <div className="col-span-3">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-2 bg-neutral-800 rounded overflow-hidden">
+                <div className={`h-full transition-all ${headlossPercent > 80 ? 'bg-red-500' : headlossPercent > 60 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                  style={{ width: `${Math.min(headlossPercent, 100)}%` }} />
+              </div>
+              <span className="mono text-xs text-white w-12">{filter.headlossFt.toFixed(1)}</span>
+            </div>
+          </div>
+          <div className={`col-span-1 text-right mono ${filter.turbidityNtu > 0.08 ? 'text-red-400 font-bold' : 'text-white'}`}>
+            {filter.turbidityNtu.toFixed(3)}
+          </div>
+          <div className="col-span-1 text-right mono text-white">{filter.runtimeHrs.toFixed(0)}</div>
+          <div className="col-span-3 flex gap-2 justify-center">
+            {filter.state === FilterState.BACKWASHING && (
+              <div className="text-xs text-blue-400 font-bold animate-pulse">
+                WASHING {(filter.backwashProgress * 100).toFixed(0)}%
+              </div>
+            )}
+            {filter.state === FilterState.OFFLINE_QUEUED && (
+              <div className="text-xs text-yellow-400 font-bold">QUEUED</div>
+            )}
+            {(filter.state === FilterState.ONLINE || filter.state === FilterState.OFFLINE_MANUAL) && (
+              <>
+                <button onClick={onToggle}
+                  className={`px-3 py-1 text-xs font-bold border transition-colors ${filter.state === FilterState.ONLINE ? 'border-red-500 text-red-500 hover:bg-red-500/10' : 'border-green-500 text-green-500 hover:bg-green-500/10'}`}>
+                  {filter.state === FilterState.ONLINE ? 'TAKE OFFLINE' : 'BRING ONLINE'}
+                </button>
+                {filter.state === FilterState.ONLINE && (
+                  <button onClick={onWash}
+                    className="px-3 py-1 text-xs font-bold border border-blue-500 text-blue-500 hover:bg-blue-500/10 transition-colors">
+                    WASH NOW
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function LogPanel({ logs }) {
+      return (
+        <div className="fixed bottom-0 left-0 right-0 bg-black/90 border-t border-neutral-700 p-4 max-h-32 overflow-y-auto">
+          <div className="space-y-1 font-mono text-xs">
+            {logs.slice(0, 5).map((log, i) => (
+              <div key={i} className={log.type === 'error' ? 'text-red-400' : log.type === 'warn' ? 'text-yellow-400' : log.type === 'success' ? 'text-green-400' : 'text-neutral-400'}>
+                [{log.timestamp}] {log.message}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function FilterSpreadApp() {
+      const initialFilters = Array.from({ length: CONSTANTS.TOTAL_FILTERS }, (_, i) => ({
+        id: i + 1,
+        state: FilterState.ONLINE,
+        runtimeHrs: i * CONSTANTS.INITIAL_STAGGER_HRS,
+        headlossFt: 1.0 + (i * 0.5),
+        turbidityNtu: 0.02,
+        flowMgd: 10,
+        backwashProgress: 0,
+        isBreakthrough: false,
+      }));
+
+      const [state, setState] = useState({
+        filters: initialFilters,
+        simTimeHrs: 0,
+        speed: 1,
+        isPaused: false,
+        backwashQueue: [],
+        activeBackwashId: null,
+        logs: [{ timestamp: '00:00', message: 'System Initialized. Flow Target: 100 MGD', type: 'info' }],
+        isFailed: false,
+        failureReason: '',
+      });
+
+      const stateRef = useRef(state);
+      stateRef.current = state;
+
+      const lastTimeRef = useRef(0);
+
+      const formatTime = (totalHrs) => {
+        const hrs = Math.floor(totalHrs) % 24;
+        const mins = Math.floor((totalHrs * 60) % 60);
+        return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+      };
+
+      const addLog = useCallback((message, type = 'info') => {
+        setState(prev => ({
+          ...prev,
+          logs: [{ timestamp: formatTime(prev.simTimeHrs), message, type }, ...prev.logs].slice(0, 100)
+        }));
+      }, []);
+
+      const toggleFilter = (id) => {
+        setState(prev => {
+          const filters = prev.filters.map(f => {
+            if (f.id === id) {
+              if (f.state === FilterState.ONLINE) {
+                addLog(`Filter ${id} manually taken OFFLINE`, 'warn');
+                return { ...f, state: FilterState.OFFLINE_MANUAL, flowMgd: 0 };
+              } else if (f.state === FilterState.OFFLINE_MANUAL) {
+                addLog(`Filter ${id} manually returned ONLINE`, 'info');
+                return { ...f, state: FilterState.ONLINE };
+              }
+            }
+            return f;
+          });
+          return { ...prev, filters };
+        });
+      };
+
+      const queueWash = (id) => {
+        setState(prev => {
+          if (prev.backwashQueue.includes(id) || prev.activeBackwashId === id) return prev;
+          addLog(`Filter ${id} queued for Backwash`, 'info');
+          return {
+            ...prev,
+            backwashQueue: [...prev.backwashQueue, id]
+          };
+        });
+      };
+
+      const setSpeed = (speed) => setState(prev => ({ ...prev, speed, isPaused: speed === 0 }));
+
+      const tick = useCallback((time) => {
+        if (!lastTimeRef.current) lastTimeRef.current = time;
+        const realDeltaSec = (time - lastTimeRef.current) / 1000;
+        lastTimeRef.current = time;
+
+        const s = stateRef.current;
+        if (s.isPaused || s.isFailed) {
+          requestAnimationFrame(tick);
+          return;
+        }
+
+        const simDeltaHrs = realDeltaSec * s.speed;
+        const newSimTime = s.simTimeHrs + simDeltaHrs;
+
+        const onlineFilters = s.filters.filter(f => f.state === FilterState.ONLINE);
+        const onlineCount = onlineFilters.length;
+
+        if (onlineCount === 0 || (CONSTANTS.TOTAL_FLOW_TARGET / onlineCount) > CONSTANTS.MAX_HYDRAULIC_CAP) {
+          setState(prev => ({
+            ...prev,
+            isFailed: true,
+            failureReason: onlineCount === 0 ? 'CRITICAL FAILURE: NO FILTERS ONLINE' : 'CRITICAL FAILURE: HYDRAULIC OVERLOAD (>20 MGD/Filter)'
+          }));
+          return;
+        }
+
+        const flowPerFilter = CONSTANTS.TOTAL_FLOW_TARGET / onlineCount;
+
+        let newActiveBackwashId = s.activeBackwashId;
+        let newQueue = [...s.backwashQueue];
+        let justFinishedId = null;
+
+        if (newActiveBackwashId !== null) {
+          const filter = s.filters.find(f => f.id === newActiveBackwashId);
+          const progressAdded = simDeltaHrs / CONSTANTS.BACKWASH_DURATION_HRS;
+          const newProgress = filter.backwashProgress + progressAdded;
+
+          if (newProgress >= 1) {
+            justFinishedId = newActiveBackwashId;
+            newActiveBackwashId = null;
+          }
+        }
+
+        if (newActiveBackwashId === null && newQueue.length > 0) {
+          newActiveBackwashId = newQueue.shift();
+        }
+
+        let logBuffer = [];
+
+        const newFilters = s.filters.map(f => {
+          const isWashing = f.id === newActiveBackwashId;
+          const finishedWashing = f.id === justFinishedId;
+
+          if (finishedWashing) {
+            logBuffer.push({ msg: `Filter ${f.id} backwash complete. Online.`, type: 'success' });
+            return {
+              ...f,
+              state: FilterState.ONLINE,
+              runtimeHrs: 0,
+              headlossFt: 1.0,
+              turbidityNtu: 0.02,
+              backwashProgress: 0,
+              isBreakthrough: false
+            };
+          }
+
+          if (isWashing) {
+            return {
+              ...f,
+              state: FilterState.BACKWASHING,
+              backwashProgress: f.backwashProgress + (simDeltaHrs / CONSTANTS.BACKWASH_DURATION_HRS),
+              flowMgd: 0
+            };
+          }
+
+          if (f.state === FilterState.ONLINE) {
+            const headlossRate = CONSTANTS.BASE_HEADLOSS_RATE * (flowPerFilter / 10);
+            const newHeadloss = f.headlossFt + (headlossRate * simDeltaHrs);
+            const newRuntime = f.runtimeHrs + simDeltaHrs;
+            let newTurbidity = f.turbidityNtu;
+            let isBreakthrough = f.isBreakthrough;
+
+            if (flowPerFilter > CONSTANTS.BREAKTHROUGH_THRESHOLD_MGD && newRuntime > CONSTANTS.BREAKTHROUGH_THRESHOLD_HRS) {
+              if (!isBreakthrough) {
+                isBreakthrough = true;
+                logBuffer.push({ msg: `Filter ${f.id} TURBIDITY BREAKTHROUGH detected!`, type: 'error' });
+              }
+              newTurbidity = Math.min(0.15, newTurbidity + (0.26 * simDeltaHrs));
+            }
+
+            const hitHeadloss = newHeadloss >= CONSTANTS.LIMIT_HEADLOSS;
+            const hitTurbidity = newTurbidity >= CONSTANTS.LIMIT_TURBIDITY;
+            const hitRuntime = newRuntime >= CONSTANTS.LIMIT_RUNTIME;
+
+            if (hitHeadloss || hitTurbidity || hitRuntime) {
+              const reason = hitHeadloss ? 'HEADLOSS' : hitTurbidity ? 'TURBIDITY' : 'RUNTIME';
+              logBuffer.push({ msg: `Filter ${f.id} reached ${reason} limit. AUTO-QUEUING.`, type: 'warn' });
+
+              newQueue.push(f.id);
+              return {
+                ...f,
+                state: FilterState.OFFLINE_QUEUED,
+                headlossFt: newHeadloss,
+                runtimeHrs: newRuntime,
+                turbidityNtu: newTurbidity,
+                flowMgd: 0,
+                isBreakthrough
+              };
+            }
+
+            return {
+              ...f,
+              flowMgd: flowPerFilter,
+              headlossFt: newHeadloss,
+              runtimeHrs: newRuntime,
+              turbidityNtu: newTurbidity,
+              isBreakthrough
+            };
+          }
+
+          return { ...f, flowMgd: 0 };
+        });
+
+        setState(prev => {
+          const finalLogs = [...prev.logs];
+          logBuffer.forEach(l => {
+            finalLogs.unshift({ timestamp: formatTime(newSimTime), message: l.msg, type: l.type });
+          });
+
+          return {
+            ...prev,
+            simTimeHrs: newSimTime,
+            filters: newFilters,
+            activeBackwashId: newActiveBackwashId,
+            backwashQueue: Array.from(new Set(newQueue)),
+            logs: finalLogs.slice(0, 100)
+          };
+        });
+
+        requestAnimationFrame(tick);
+      }, [addLog]);
+
+      useEffect(() => {
+        const frame = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(frame);
+      }, [tick]);
+
+      const restart = () => {
+        window.location.reload();
+      };
+
+      return (
+        <div className="flex flex-col h-full overflow-hidden text-sm uppercase bg-[#1a1a1a]">
+          {state.isFailed && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
+              <div className="p-10 text-center border-4 border-red-600 bg-neutral-900 rounded-xl shadow-2xl">
+                <h1 className="text-6xl font-black text-red-600 mb-6 tracking-tighter">DEATH SPIRAL</h1>
+                <p className="text-2xl text-white mb-8 max-w-lg mx-auto">{state.failureReason}</p>
+                <button
+                  onClick={restart}
+                  className="px-8 py-4 bg-red-600 text-white font-bold hover:bg-red-700 transition-colors border-2 border-red-500 shadow-lg"
+                >
+                  RESET PLANT
+                </button>
+              </div>
+            </div>
+          )}
+
+          <ScadaHeader
+            simTime={formatTime(state.simTimeHrs)}
+            onlineCount={state.filters.filter(f => f.state === FilterState.ONLINE).length}
+            isWashing={state.activeBackwashId !== null}
+            activeBackwashId={state.activeBackwashId}
+            speed={state.speed}
+            onSetSpeed={setSpeed}
+          />
+
+          <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2 bg-[#1a1a1a]">
+            <div className="grid grid-cols-12 gap-4 px-4 py-2 font-bold text-neutral-500 sticky top-0 bg-[#1a1a1a] border-b border-neutral-800 z-10">
+              <div className="col-span-1">ID</div>
+              <div className="col-span-1">STATUS</div>
+              <div className="col-span-2">FLOW (MGD)</div>
+              <div className="col-span-3">HEADLOSS (FT)</div>
+              <div className="col-span-1 text-right">NTU</div>
+              <div className="col-span-1 text-right">HOURS</div>
+              <div className="col-span-3 text-center">CONTROLS</div>
+            </div>
+
+            {state.filters.map(filter => (
+              <FilterRow
+                key={filter.id}
+                filter={filter}
+                isQueued={state.backwashQueue.includes(filter.id)}
+                onToggle={() => toggleFilter(filter.id)}
+                onWash={() => queueWash(filter.id)}
+              />
+            ))}
+          </div>
+
+          <LogPanel logs={state.logs} />
+        </div>
+      );
+    }
+
+    const filterRoot = createRoot(document.getElementById('filter-root'));
+    filterRoot.render(<FilterSpreadApp />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "name": "WTP Filter Spread Simulator",
+  "description": "A high-fidelity SCADA-style simulation of a Water Treatment Plant filtration system designed to demonstrate hydraulic cascading failures and the importance of staggered backwash schedules.",
+  "requestFramePermissions": []
+}

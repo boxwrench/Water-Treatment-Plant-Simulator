@@ -13,3 +13,6 @@ Thumbs.db
 *.tmp
 *.bak
 *.swp
+
+# Ignore problematic 'nul' file on Windows
+hydroflow-ca/nul

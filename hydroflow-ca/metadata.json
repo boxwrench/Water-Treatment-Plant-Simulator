@@ -1,0 +1,5 @@
+{
+  "name": "HydroFlow CA",
+  "description": "A high-performance, strict grid-based fluid simulation using double-buffered cellular automata logic.",
+  "requestFramePermissions": []
+}
