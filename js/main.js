@@ -9,8 +9,11 @@ const views = {
 const alarmListEl = document.getElementById("alarm-list");
 const timeDisplayEl = document.querySelector(".header-time");
 const sopModal = document.getElementById("modal-sop");
+const labsModal = document.getElementById("modal-labs");
 const btnSop = document.getElementById("btn-sop");
+const btnLabs = document.getElementById("btn-labs");
 const btnCloseSop = document.getElementById("btn-close-sop");
+const btnCloseLabs = document.getElementById("btn-close-labs");
 const colleagueAvatarEl = document.getElementById("colleague-avatar");
 const colleagueSpeechBubbleEl = document.getElementById(
   "colleague-speech-bubble"
@@ -228,10 +231,13 @@ function initializeGame() {
       sopModal.classList.add("hidden")
     );
 
-  const labsBtn = document.getElementById("btn-labs");
-  if (labsBtn)
-    labsBtn.addEventListener("click", () =>
-      alert("Simulator Labs are under development.")
+  if (btnLabs)
+    btnLabs.addEventListener("click", () =>
+      labsModal.classList.remove("hidden")
+    );
+  if (btnCloseLabs)
+    btnCloseLabs.addEventListener("click", () =>
+      labsModal.classList.add("hidden")
     );
 
   const restartBtn = document.getElementById("btn-restart-shift");

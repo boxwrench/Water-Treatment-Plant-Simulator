@@ -49,6 +49,48 @@
       </div>
     </div>
 
+    <!-- MODALS -->
+    <div id="modal-labs" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h1>SIMULATOR LABS</h1>
+        <div class="sop-content">
+          <h3>Advanced Process Simulators</h3>
+          <p>Explore complex water treatment phenomena through specialized interactive labs.</p>
+          <ul style="list-style: none; padding: 20px 0;">
+            <li style="margin-bottom: 15px;">
+              <a href="https://boxwrench.github.io/cell-auto/" target="_blank" class="menu-button" style="display: block; text-decoration: none; padding: 10px; font-size: 14px;">Cellular Automata - Flocculation</a>
+            </li>
+            <li>
+              <a href="https://boxwrench.github.io/hydroflow-ca-/" target="_blank" class="menu-button" style="display: block; text-decoration: none; padding: 10px; font-size: 14px;">HydroFlow - Flow Simulation</a>
+            </li>
+          </ul>
+        </div>
+        <button id="btn-close-labs" class="menu-button">CLOSE</button>
+      </div>
+    </div>
+
+    <div id="modal-sop" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h1>DIGITAL SOP</h1>
+        <div class="sop-content">
+          <h3>Standard Operating Procedures</h3>
+          <p>1. Monitor SCADA panels for alarm conditions.</p>
+          <p>2. Investigate alarms by visiting the relevant process area.</p>
+          <p>3. Consult with colleagues to identify root causes.</p>
+          <p>4. Implement corrective actions and verify resolution.</p>
+        </div>
+        <button id="btn-close-sop" class="menu-button">CLOSE</button>
+      </div>
+    </div>
+
+    <div id="modal-end-shift" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h1>SHIFT COMPLETE</h1>
+        <p>Great work, operator! The plant is stable and the next shift has arrived.</p>
+        <button id="btn-restart-shift" class="menu-button">START NEW SHIFT</button>
+      </div>
+    </div>
+
     <script defer src="js/scenarios/issue1_filterBreakthrough.js"></script>
     <script defer src="js/scenarios/issue4_chloraminationImbalance.js"></script>
     <script defer src="js/scenarios/issue7_weakChemicalStrength.js"></script>
