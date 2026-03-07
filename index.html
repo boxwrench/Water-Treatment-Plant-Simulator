@@ -42,42 +42,73 @@
           </div>
           <div class="scenario-main">
             <h1 id="scenario-title"></h1>
+            <div id="scenario-location" class="scenario-location"></div>
             <div id="scenario-scada-panel" class="scada-panel"></div>
             <div id="scenario-choices" class="choices-grid"></div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- MODALS -->
-    <div id="modal-labs" class="modal-overlay hidden">
-      <div class="modal-content">
-        <h1>SIMULATOR LABS</h1>
-        <div class="sop-content">
-          <h3>Advanced Process Simulators</h3>
-          <p>Explore complex water treatment phenomena through specialized interactive labs.</p>
-          <ul style="list-style: none; padding: 20px 0;">
-            <li style="margin-bottom: 15px;">
-              <a href="https://boxwrench.github.io/cell-auto/" target="_blank" class="menu-button" style="display: block; text-decoration: none; padding: 10px; font-size: 14px;">Cellular Automata - Flocculation</a>
-            </li>
-            <li>
-              <a href="https://boxwrench.github.io/hydroflow-ca-/" target="_blank" class="menu-button" style="display: block; text-decoration: none; padding: 10px; font-size: 14px;">HydroFlow - Flow Simulation</a>
-            </li>
-          </ul>
+      <div id="view-lab" class="view">
+        <div class="lab-ui">
+          <div class="lab-sidebar">
+            <h1 id="lab-title"></h1>
+            <div id="lab-subtitle" class="scenario-location"></div>
+            <div id="lab-brief" class="speech-bubble"></div>
+            <div class="lab-side-actions">
+              <button id="btn-return-control-room" class="menu-button">
+                RETURN TO CONTROL ROOM
+              </button>
+            </div>
+          </div>
+          <div class="lab-main">
+            <div class="lab-panels">
+              <div class="lab-panel">
+                <h2>LAB CONTROLS</h2>
+                <div id="lab-controls" class="lab-controls"></div>
+              </div>
+              <div class="lab-panel">
+                <h2>MODEL OUTPUT</h2>
+                <pre id="lab-output" class="lab-output"></pre>
+              </div>
+            </div>
+            <div class="lab-panels">
+              <div class="lab-panel">
+                <h2>COACHING</h2>
+                <div id="lab-feedback" class="lab-feedback"></div>
+              </div>
+              <div class="lab-panel">
+                <h2>AVAILABLE LABS</h2>
+                <div id="lab-list" class="choices-grid"></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <button id="btn-close-labs" class="menu-button">CLOSE</button>
       </div>
     </div>
 
     <div id="modal-sop" class="modal-overlay hidden">
       <div class="modal-content">
-        <h1>DIGITAL SOP</h1>
+        <h1>S.O.P. MANUAL</h1>
         <div class="sop-content">
-          <h3>Standard Operating Procedures</h3>
-          <p>1. Monitor SCADA panels for alarm conditions.</p>
-          <p>2. Investigate alarms by visiting the relevant process area.</p>
-          <p>3. Consult with colleagues to identify root causes.</p>
-          <p>4. Implement corrective actions and verify resolution.</p>
+          <h3>VERIFY ANALYZERS FIRST</h3>
+          <p>
+            When a residual alarm appears, confirm the reading with a grab
+            sample before making major process changes. Separate instrument
+            failure from real water quality changes.
+          </p>
+          <h3>CHEMICAL STRENGTH TROUBLESHOOTING</h3>
+          <p>
+            Check product age, storage temperature, dilution sources, mixing
+            assumptions, and vendor paperwork. A benchtop titration is the
+            fastest way to confirm actual hypochlorite strength.
+          </p>
+          <h3>DOCUMENT THE CORRECTION</h3>
+          <p>
+            Update controller assumptions, isolate failed valves or leaks, and
+            file non-conformance notes when delivered product does not match
+            spec.
+          </p>
         </div>
         <button id="btn-close-sop" class="menu-button">CLOSE</button>
       </div>
@@ -86,14 +117,16 @@
     <div id="modal-end-shift" class="modal-overlay hidden">
       <div class="modal-content">
         <h1>SHIFT COMPLETE</h1>
-        <p>Great work, operator! The plant is stable and the next shift has arrived.</p>
+        <p id="end-shift-summary" class="end-shift-summary"></p>
         <button id="btn-restart-shift" class="menu-button">START NEW SHIFT</button>
       </div>
     </div>
 
+    <script defer src="js/scenarioSystem.js"></script>
+    <script defer src="js/labs/chemicalFeedDosingLab.js"></script>
     <script defer src="js/scenarios/issue1_filterBreakthrough.js"></script>
     <script defer src="js/scenarios/issue4_chloraminationImbalance.js"></script>
-    <script defer src="js/scenarios/issue7_weakChemicalStrength.js"></script>
+    <script defer src="js/scenarios/issue7_weakChemicalStrength_registry.js"></script>
     <script defer src="js/scenarios/issue8_backwashWaterRecovery.js"></script>
     <script defer src="js/scenarios/issue10_finishedWaterQuality.js"></script>
 

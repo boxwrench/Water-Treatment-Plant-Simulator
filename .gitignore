@@ -16,3 +16,6 @@ Thumbs.db
 
 # Ignore problematic 'nul' file on Windows
 hydroflow-ca/nul
+
+# Generated artifacts
+output/
